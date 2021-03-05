@@ -6,10 +6,10 @@ from skimage.io import imread, imsave
 
 
 def get_file_list(
-        root_dir: str,
-        absolute_path: bool = True,
-        file_ending: bool = True,
-        file_type_filter: str = None,
+    root_dir: str,
+    absolute_path: bool = True,
+    file_ending: bool = True,
+    file_type_filter: str = None,
 ) -> List:
     assert os.path.exists(root_dir)
     list_of_data_locs = []
@@ -27,10 +27,10 @@ def get_file_list(
     return sorted_nicely(list_of_data_locs)
 
 
-def read_tiff_from_disk(file : str) -> np.ndarray:
+def read_tiff_from_disk(file: str) -> np.ndarray:
     img = np.array(imread(file))
     return img
 
 
-def save_img_as_tiff(img:np.ndarray, file:str):
+def save_img_as_tiff(img: np.ndarray, file: str):
     imsave(file, arr=img)

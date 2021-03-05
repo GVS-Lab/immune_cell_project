@@ -22,7 +22,7 @@ class FeatureExtractionPipeline(object):
 
 
 class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
-    def __init__(self, output_dir: str, raw_image_dir:str, segmented_image_dir:str):
+    def __init__(self, output_dir: str, raw_image_dir: str, segmented_image_dir: str):
         super().__init__(output_dir=output_dir)
         self.raw_image_dir = raw_image_dir
         self.segmented_image_dir = segmented_image_dir
@@ -39,18 +39,22 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
             nuclei_image_loc = self.raw_nuclei_image_locs[i]
             nuclei_mask_loc = self.nuclei_mask_locs[i]
             nuclei_image_id = os.path.split(nuclei_image_loc)[1]
-            nuclei_image_id = nuclei_image_id[:nuclei_image_id.index('.')]
+            nuclei_image_id = nuclei_image_id[: nuclei_image_id.index(".")]
 
-            nuclei_features = run_nuclear_chromatin_feat_ext(nuclei_image_loc, nuclei_mask_loc, 'temp/')
-            nuclei_ids = [nuclei_image_id + '_{}'.format(i) for i in range(len(nuclei_features))]
+            nuclei_features = run_nuclear_chromatin_feat_ext(
+                nuclei_image_loc, nuclei_mask_loc, "temp/"
+            )
+            nuclei_ids = [
+                nuclei_image_id + "_{}".format(i) for i in range(len(nuclei_features))
+            ]
 
             all_features.append(nuclei_features)
             all_ids.extend(nuclei_ids)
 
         self.features = pd.concat(all_features)
-        self.features = self.features.set_index(all_ids)
+        self.features.index = all_ids
 
-    def save_features(self, file_name:str=None):
+    def save_features(self, file_name: str = None):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
@@ -58,9 +62,13 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
             file_name = "chromatin_features_2d.csv"
         self.features.to_csv(os.path.join(self.output_dir, file_name))
 
+    def run_default_pipeline(self):
+        self.extract_chromatin_features()
+        self.save_features()
 
-class FeatureExtractionPipeline3D(FeatureExtractionPipeline):
-    def __init__(self, input_dir:str, output_dir:str, channels:List[str]):
+
+class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
+    def __init__(self, input_dir: str, output_dir: str, channels: List[str]):
         super().__init__(output_dir=output_dir)
         self.image_locs = get_file_list(input_dir)
         self.channels = [channel.lower() for channel in channels]
@@ -75,7 +83,7 @@ class FeatureExtractionPipeline3D(FeatureExtractionPipeline):
         for i in tqdm(range(len(self.image_locs))):
             image_loc = self.image_locs[i]
             image_id = os.path.split(image_loc)[1]
-            image_id = image_id[:image_ids.index(".")]
+            image_id = image_id[: image_id.index(".")]
 
             raw_image = tifffile.imread(image_loc)
             raw_images.append(raw_image)
@@ -83,27 +91,55 @@ class FeatureExtractionPipeline3D(FeatureExtractionPipeline):
         self.raw_images = raw_images
         self.image_ids = image_ids
 
-    def compute_nuclei_masks(self, method:str="morph_snakes", median_smoothing = "False", min_size:int=400, n_jobs:int=10, **kwargs):
+    def compute_nuclei_masks(
+        self,
+        method: str = "morph_snakes",
+        median_smoothing="False",
+        min_size: int = 400,
+        n_jobs: int = 10,
+        **kwargs
+    ):
         dapi_channel_id = self.channels.index("dapi")
-        self.nuclei_masks = Parallel(n_jobs=n_jobs)(delayed(get_nuclear_mask_in_3d)(
-            dapi_image=self.raw_images[i, dapi_channel_id], method=method, median_smoothing=median_smoothing,
-            min_size=min_size, **kwargs ) for i in tqdm(range(len(self.raw_images))))
+        self.nuclei_masks = Parallel(n_jobs=n_jobs)(
+            delayed(get_nuclear_mask_in_3d)(
+                dapi_image=self.raw_images[i][:, dapi_channel_id],
+                method=method,
+                median_smoothing=median_smoothing,
+                min_size=min_size,
+                **kwargs
+            )
+            for i in tqdm(range(len(self.raw_images)))
+        )
 
     def add_nuclei_mask_channel(self):
         self.channels.append("nuclear_mask")
         for i in tqdm(range(len(self.nuclei_masks))):
-            self.raw_images[i].concatenate(self.nuclei_masks[i], axis=1)
+            self.raw_images[i] = np.concatenate([self.raw_images[i], np.expand_dims(self.nuclei_masks[i], axis=1)], axis=1)
 
-    def extract_dna_features(self):
+    def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None):
         all_features = []
         dapi_channel_id = self.channels.index("dapi")
         for i in tqdm(range(len(self.raw_images))):
-            dapi_image = self.raw_images[i][:,dapi_channel_id]
+            dapi_image = self.raw_images[i][:, dapi_channel_id]
             nucleus_mask = self.nuclei_masks[i]
-            features = compute_all_morphological_chromatin_features_3d(dapi_image, nucleus_mask=nucleus_mask)
+            features = compute_all_morphological_chromatin_features_3d(
+                dapi_image, nucleus_mask=nucleus_mask, bins=bins, selem=selem, index=i,
+            )
             all_features.append(features)
         self.features = pd.concat(all_features)
-        self.features = self.features.set_index(self.image_ids)
+        self.features.index = self.image_ids
 
-    def save_features(self, file_name:str):
-        pass
+    def save_features(self, file_name: str=None):
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir, exist_ok=True)
+
+        if file_name is None:
+            file_name = "chromatin_features_3d.csv"
+        self.features.to_csv(os.path.join(self.output_dir, file_name))
+
+    def run_default_pipeline(self):
+        self.read_in_images()
+        self.compute_nuclei_masks()
+        self.add_nuclei_mask_channel()
+        self.extract_dna_features()
+        self.save_features()
