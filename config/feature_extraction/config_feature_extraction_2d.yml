@@ -1,9 +1,9 @@
-output_dir: '../../data/sample1_02_25_21/tcells_dapi_lamina_hp1_500nm/features/'
+output_dir: '../../data/sample1_02_25_21/tcells_dapi_gh2ax_lamina_500nm/features/'
 module: src.pipelines.feature_extraction
 class: DnaFeatureExtractionPipeline2D
 run_params:
-  raw_image_dir: '../../data/sample1_02_25_21/tcells_dapi_lamina_hp1_500nm/segmented/segmentation_watershed_2d/dapi_projections_2d'
-  segmented_image_dir: '../../data/sample1_02_25_21/tcells_dapi_lamina_hp1_500nm/segmented/segmentation_watershed_2d/labeled_segmentation_2d'
+  raw_image_dir: '../../data/sample1_02_25_21/tcells_dapi_gh2ax_lamina_500nm/segmented/segmentation_watershed_2d/dapi_projections_2d'
+  segmented_image_dir: '../../data/sample1_02_25_21/tcells_dapi_gh2ax_lamina_500nm/segmented/segmentation_watershed_2d/labeled_segmentation_2d'
 
 
 pipeline:
