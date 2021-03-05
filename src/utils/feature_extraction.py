@@ -25,7 +25,7 @@ def get_radial_distribution(image, object_mask, bins=10, selem=None):
     rdp = []
     for i in range(len(rp_masks)):
         rdp.append(np.sum(sliced_image * np.uint8(rp_masks[i])))
-    rdp = np.array(rdp[:rdp.index(0)+1])
+    rdp = np.array(rdp[: rdp.index(0) + 1])
     total_intensity = rdp[0]
     rdp = rdp / total_intensity
     rdp = rdp[::-1]
@@ -59,7 +59,6 @@ def get_chromatin_features_3d(
     k: float = 1.5,
     bins: int = 10,
     selem: np.ndarray = None,
-    index:int=0,
 ):
     masked_dapi_image = np.ma.array(dapi_image, mask=~np.array(nucleus_mask))
     hc_threshold = masked_dapi_image.mean() + k * masked_dapi_image.std()
@@ -72,6 +71,8 @@ def get_chromatin_features_3d(
         "rel_hc_volume": hc_vol / total_vol,
         "rel_ec_volume": ec_vol / total_vol,
         "hc_ec_ratio_3d": hc_vol / ec_vol,
+        "nuclear_mean_intensity": masked_dapi_image.mean(),
+        "nuclear_std_intensity": masked_dapi_image.std(),
     }
     rdps = get_radial_distribution(
         image=dapi_image, object_mask=nucleus_mask, bins=bins, selem=selem
@@ -86,7 +87,7 @@ def compute_all_morphological_chromatin_features_3d(
     nucleus_mask: np.ndarray,
     bins: int = 10,
     selem: np.ndarray = None,
-    index:int=0
+    index: int = 0,
 ):
     morphological_properties = [
         "convex_image",
@@ -104,17 +105,39 @@ def compute_all_morphological_chromatin_features_3d(
     ]
 
     morphological_features = regionprops_table(
-        np.uint8(nucleus_mask), dapi_image, properties=morphological_properties, separator="_"
+        np.uint8(nucleus_mask),
+        dapi_image,
+        properties=morphological_properties,
+        separator="_",
     )
     morphological_features["nuclear_volume"] = np.sum(nucleus_mask)
     morphological_features["nuclear_surface_area"] = get_nuclear_surface_area(
         nucleus_mask
     )
-    morphological_features["convex_hull_vol"] = np.sum(morphological_features["convex_image"][0])
-    morphological_features["eccentricity_3d"] = np.sum(nucleus_mask) / morphological_features["convex_hull_vol"]
+    morphological_features["convex_hull_vol"] = np.sum(
+        morphological_features["convex_image"][0]
+    )
+    morphological_features["eccentricity_3d"] = (
+        np.sum(nucleus_mask) / morphological_features["convex_hull_vol"]
+    )
     del morphological_features["convex_image"]
     chromatin_features = get_chromatin_features_3d(
-        dapi_image, nucleus_mask, bins=bins, selem=selem, index=index
+        dapi_image, nucleus_mask, bins=bins, selem=selem
     )
 
     return pd.DataFrame(dict(**morphological_features, **chromatin_features))
+
+
+def compute_all_channel_features_3d(
+    image: np.ndarray, nucleus_mask: np.ndarray, channel: str, index: int = 0
+):
+    masked_channel_image = np.ma.array(image, mask=~nucleus_mask)
+    nuclear_volume = np.sum(nucleus_mask)
+    features = {
+        "rel_"
+        + channel
+        + "_intensity": np.array(masked_channel_image.sum() / nuclear_volume),
+        "mean_" + channel + "_intensity": np.array(masked_channel_image.mean()),
+        "std_" + channel + "_intensity": np.array(masked_channel_image.std()),
+    }
+    return pd.DataFrame.from_dict(features)

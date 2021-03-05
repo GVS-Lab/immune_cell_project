@@ -5,11 +5,12 @@ from joblib import Parallel, delayed
 
 from ncmo.src.utils.Run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
 import tifffile
-from skimage import filters, segmentation, morphology
 from tqdm import tqdm
-import scipy.ndimage as ndi
 
-from src.utils.feature_extraction import compute_all_morphological_chromatin_features_3d
+from src.utils.feature_extraction import (
+    compute_all_morphological_chromatin_features_3d,
+    compute_all_channel_features_3d,
+)
 from src.utils.io import get_file_list
 import pandas as pd
 
@@ -114,7 +115,10 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
     def add_nuclei_mask_channel(self):
         self.channels.append("nuclear_mask")
         for i in tqdm(range(len(self.nuclei_masks))):
-            self.raw_images[i] = np.concatenate([self.raw_images[i], np.expand_dims(self.nuclei_masks[i], axis=1)], axis=1)
+            self.raw_images[i] = np.concatenate(
+                [self.raw_images[i], np.expand_dims(self.nuclei_masks[i], axis=1)],
+                axis=1,
+            )
 
     def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None):
         all_features = []
@@ -129,7 +133,17 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         self.features = pd.concat(all_features)
         self.features.index = self.image_ids
 
-    def save_features(self, file_name: str=None):
+    def save_nuclei_images(self, output_dir: str = None):
+        if output_dir is None:
+            output_dir = "nuclei_images"
+
+        output_dir = os.path.join(self.output_dir, output_dir)
+        for i in tqdm(range(len(self.raw_images))):
+            tifffile.imsave(
+                os.path.join(output_dir, self.image_ids[i] + ".tif", imagej=True)
+            )
+
+    def save_features(self, file_name: str = None):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
@@ -141,5 +155,72 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         self.read_in_images()
         self.compute_nuclei_masks()
         self.add_nuclei_mask_channel()
+        self.save_nuclei_images()
         self.extract_dna_features()
+        self.save_features()
+
+
+class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
+    def __init__(self, input_dir: str, output_dir: str, channels: List[str]):
+        super().__init__(input_dir=input_dir, output_dir=output_dir, channels=channels)
+        self.channel_features = []
+
+    def read_in_images(self):
+        super().read_in_images()
+
+    def compute_nuclei_masks(
+        self,
+        method: str = "morph_snakes",
+        median_smoothing="False",
+        min_size: int = 400,
+        n_jobs: int = 10,
+        **kwargs
+    ):
+        super().compute_nuclei_masks(
+            method=method,
+            median_smoothing=median_smoothing,
+            min_size=min_size,
+            n_jobs=n_jobs,
+        )
+
+    def add_nuclei_mask_channel(self):
+        super().add_nuclei_mask_channel()
+
+    def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None):
+        super().extract_dna_features(bins=bins, selem=selem)
+        self.channel_features.append(self.features)
+
+    def save_nuclei_images(self, output_dir: str = None):
+        super().save_nuclei_images(output_dir=output_dir)
+
+    def extract_channel_features(self, channel: str):
+        channel_id = self.channels.index(channel)
+        all_channel_features = []
+        for i in tqdm(range(len(self.raw_images))):
+            channel_image = self.raw_images[i][:, channel_id]
+            nucleus_mask = self.nuclei_masks[i]
+            features = compute_all_channel_features_3d(
+                channel_image, nucleus_mask=nucleus_mask, channel=channel
+            )
+            all_channel_features.append(features)
+        self.features = pd.concat(all_channel_features)
+        self.features.index = self.image_ids
+        self.channel_features.append(self.features)
+
+    def save_features(self, file_name: str = None):
+        self.features = pd.merge(self.channel_features)
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir, exist_ok=True)
+
+        if file_name is None:
+            file_name = "nuclei_features_3d.csv"
+        self.features.to_csv(os.path.join(self.output_dir, file_name))
+
+    def run_default_pipeline(self):
+        self.read_in_images()
+        self.compute_nuclei_masks()
+        self.add_nuclei_mask_channel()
+        self.save_nuclei_images()
+        self.extract_dna_features()
+        self.extract_channel_features(channel="lamina")
         self.save_features()
