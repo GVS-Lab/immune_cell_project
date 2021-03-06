@@ -116,7 +116,12 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         self.channels.append("nuclear_mask")
         for i in tqdm(range(len(self.nuclei_masks))):
             self.raw_images[i] = np.concatenate(
-                [self.raw_images[i], np.expand_dims(self.nuclei_masks[i], axis=1).astype(self.raw_images[i].dtype)],
+                [
+                    self.raw_images[i],
+                    np.expand_dims(self.nuclei_masks[i], axis=1).astype(
+                        self.raw_images[i].dtype
+                    ),
+                ],
                 axis=1,
             )
 
@@ -127,7 +132,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             dapi_image = self.raw_images[i][:, dapi_channel_id]
             nucleus_mask = self.nuclei_masks[i]
             features = compute_all_morphological_chromatin_features_3d(
-                dapi_image, nucleus_mask=nucleus_mask, bins=bins, selem=selem, index=i,
+                dapi_image, nucleus_mask=nucleus_mask, bins=bins, selem=selem,
             )
             all_features.append(features)
         self.features = pd.concat(all_features)
@@ -144,7 +149,9 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         for i in tqdm(range(len(self.raw_images))):
             nucleus = np.expand_dims(self.raw_images[i], 0)
             tifffile.imsave(
-                os.path.join(output_dir, self.image_ids[i] + ".tif"), nucleus, imagej=True
+                os.path.join(output_dir, self.image_ids[i] + ".tif"),
+                nucleus,
+                imagej=True,
             )
 
     def save_features(self, file_name: str = None):
@@ -197,14 +204,14 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
     def save_nuclei_images(self, output_dir: str = None):
         super().save_nuclei_images(output_dir=output_dir)
 
-    def extract_channel_features(self, channel: str):
+    def extract_channel_features(self, channel: str, index:int=-1):
         channel_id = self.channels.index(channel)
         all_channel_features = []
         for i in tqdm(range(len(self.raw_images))):
             channel_image = self.raw_images[i][:, channel_id]
             nucleus_mask = self.nuclei_masks[i]
             features = compute_all_channel_features_3d(
-                channel_image, nucleus_mask=nucleus_mask, channel=channel
+                channel_image, nucleus_mask=nucleus_mask, channel=channel, index=i
             )
             all_channel_features.append(features)
         self.features = pd.concat(all_channel_features)
@@ -226,5 +233,6 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         self.add_nuclei_mask_channel()
         self.save_nuclei_images()
         self.extract_dna_features()
+        self.extract_channel_features(channel="dapi")
         self.extract_channel_features(channel="lamina")
         self.save_features()
