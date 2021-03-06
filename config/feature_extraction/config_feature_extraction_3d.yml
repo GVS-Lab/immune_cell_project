@@ -1,9 +1,9 @@
-output_dir: '../../data/sample1_02_25_21/tcells_dapi_gh2ax_lamina_500nm/features/'
+output_dir: '../../data/sample1_02_25_21/tcells_dapi_hp1_lamina_500nm/features/'
 module: src.pipelines.feature_extraction
-class: DnaFeatureExtractionPipeline3D
+class: MultiChannelFeatureExtractionPipeline3D
 run_params:
-  input_dir: '../../data/sample1_02_25_21/tcells_dapi_gh2ax_lamina_500nm/segmented/segmentation_watershed_2d/nuclear_crops'
-  channels: ['dapi', 'hp1a', 'lamin']
+  input_dir: '../../data/sample1_02_25_21/tcells_dapi_hp1_lamina_500nm/segmented/segmentation_watershed_2d/nuclear_crops'
+  channels: ['dapi', 'hp1a', 'lamina']
 
 
 pipeline:

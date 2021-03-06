@@ -140,4 +140,4 @@ def compute_all_channel_features_3d(
         "mean_" + channel + "_intensity": np.array(masked_channel_image.mean()),
         "std_" + channel + "_intensity": np.array(masked_channel_image.std()),
     }
-    return pd.DataFrame.from_dict(features)
+    return pd.DataFrame(features, index=[0])

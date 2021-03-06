@@ -116,7 +116,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         self.channels.append("nuclear_mask")
         for i in tqdm(range(len(self.nuclei_masks))):
             self.raw_images[i] = np.concatenate(
-                [self.raw_images[i], np.expand_dims(self.nuclei_masks[i], axis=1)],
+                [self.raw_images[i], np.expand_dims(self.nuclei_masks[i], axis=1).astype(self.raw_images[i].dtype)],
                 axis=1,
             )
 
@@ -138,9 +138,13 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             output_dir = "nuclei_images"
 
         output_dir = os.path.join(self.output_dir, output_dir)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+
         for i in tqdm(range(len(self.raw_images))):
+            nucleus = np.expand_dims(self.raw_images[i], 0)
             tifffile.imsave(
-                os.path.join(output_dir, self.image_ids[i] + ".tif", imagej=True)
+                os.path.join(output_dir, self.image_ids[i] + ".tif"), nucleus, imagej=True
             )
 
     def save_features(self, file_name: str = None):
@@ -208,7 +212,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         self.channel_features.append(self.features)
 
     def save_features(self, file_name: str = None):
-        self.features = pd.merge(self.channel_features)
+        self.features = self.channel_features[0].join(self.channel_features[1:])
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
