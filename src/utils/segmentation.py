@@ -9,6 +9,8 @@ def get_nuclear_mask_in_3d(
     median_smoothing: bool = False,
     min_size: int = 400,
     iterations: int = 300,
+    lambda1:int=1,
+    lambda2:int=2,
     **kwargs
 ):
 
@@ -28,7 +30,7 @@ def get_nuclear_mask_in_3d(
         nucleus_mask = np.uint8(dapi_image > threshold)
     elif method == "morph_snakes":
         nucleus_mask = segmentation.morphological_chan_vese(
-            dapi_image, iterations=iterations, **kwargs
+            dapi_image, iterations=iterations, lambda1=lambda1, lambda2=lambda2, **kwargs
         )
     else:
         raise NotImplementedError("Got unknown method indicator {}".format(method))

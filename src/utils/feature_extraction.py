@@ -22,7 +22,7 @@ def get_nuclear_surface_area(nucleus_mask: np.ndarray):
 def get_radial_distribution(image, object_mask, bins=10, selem=None):
     image_regionprops = regionprops(np.uint8(object_mask), image)[0]
     sliced_mask = image_regionprops.image
-    sliced_image = image_regionprops.int_image
+    sliced_image = image_regionprops.intensity_image
     rp_masks = get_radial_profile_masks(sliced_mask, selem=selem)
     rdp = []
     for i in range(len(rp_masks)):
@@ -113,9 +113,6 @@ def compute_all_morphological_chromatin_features_3d(
     morphological_features["convex_hull_vol"] = np.sum(
         morphological_features["convex_image"][0]
     )
-    morphological_features["solidity_3d"] = (
-        np.sum(nucleus_mask) / morphological_features["convex_hull_vol"]
-    )
     morphological_features["concavity_3d"] = (
         morphological_features["convex_hull_vol"]
         - morphological_features["nuclear_volume"]
@@ -133,7 +130,7 @@ def compute_all_channel_features_3d(
     nucleus_mask: np.ndarray,
     channel: str,
     index: int = 0,
-    dilate: bool = True,
+    dilate: bool = False,
 ):
     if dilate:
         nucleus_mask = ndi.binary_dilation(
@@ -169,25 +166,25 @@ def describe_image_intensities(
         "std_" + description + "_int": masked_image.std(),
         "q25_" + description + "_int": np.quantile(masked_image, q=0.25),
         "q75_" + description + "_int": np.quantile(masked_image, q=0.75),
-        "median_" + description + "_int": np.median(masked_image),
-        "kurtosis_" + description + "_int": kurtosis(masked_image),
-        "skewness_" + description + "_int": skew(masked_image),
+        "median_" + description + "_int": np.ma.median(masked_image),
+        "kurtosis_" + description + "_int": kurtosis(masked_image.ravel()),
+        "skewness_" + description + "_int": skew(masked_image.ravel()),
         "normalized_mean_"
         + description
-        + "_int": np.array(normalized_masked_image.mean()),
+        + "_int": normalized_masked_image.mean(),
         "normalized_std_"
         + description
-        + "_int": np.array(normalized_masked_image.std()),
+        + "_int": normalized_masked_image.std(),
         "normalized_q25_"
         + description
         + "_int": np.quantile(normalized_masked_image, q=0.25),
         "normalized_q75_"
         + description
         + "_int": np.quantile(normalized_masked_image, q=0.75),
-        "normalized_median_" + description + "_int": np.median(normalized_masked_image),
+        "normalized_median_" + description + "_int": np.ma.median(normalized_masked_image),
         "normalized_kurtosis_"
         + description
-        + "_int": kurtosis(normalized_masked_image),
-        "normalized_skewness_" + description + "_int": skew(normalized_masked_image),
+        + "_int": kurtosis(normalized_masked_image.ravel()),
+        "normalized_skewness_" + description + "_int": skew(normalized_masked_image.ravel()),
     }
     return features

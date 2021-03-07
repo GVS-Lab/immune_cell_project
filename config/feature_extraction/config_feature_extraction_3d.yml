@@ -3,7 +3,7 @@ module: src.pipelines.feature_extraction
 class: MultiChannelFeatureExtractionPipeline3D
 run_params:
   input_dir: '../../data/sample1_02_25_21/tcells_dapi_hp1_lamina_500nm/segmented/segmentation_watershed_2d/nuclear_crops'
-  channels: ['dapi', 'hp1a', 'lamina']
+  channels: ['dapi', 'hp1', 'lamina']
 
 
 pipeline:

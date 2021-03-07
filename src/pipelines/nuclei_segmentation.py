@@ -85,14 +85,8 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             self.labeled_projection, intensity_image=self.z_projection
         )
         for region in regions:
-            w, h = region.intensity_image.shape
-            if (
-                aspect_ratio_threshold is None
-                or min(w, h) / max(w, h) > aspect_ratio_threshold
-            ):
-                if area_threshold is None or region.convex_area < area_threshold:
-                    xmin, ymin, xmax, ymax = region.bbox
-                    self.nuclear_crops.append(
+            xmin, ymin, xmax, ymax = region.bbox
+            self.nuclear_crops.append(
                         self.raw_image[:, :, xmin : xmax + 1, ymin : ymax + 1]
                     )
 
