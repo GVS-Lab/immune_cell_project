@@ -1,0 +1,14 @@
+output_dir: '../../data/sample1/tcells_dapi_hp1_lamina_500nm_02_25_21/features/'
+module: src.pipelines.feature_extraction
+class: MultiChannelFeatureExtractionPipeline3D
+run_params:
+  input_dir: '../../data/sample1/tcells_dapi_hp1_lamina_500nm_02_25_21/segmented/concomp_2d/nuclear_crops_3d'
+  channels: ['dapi', 'hp1', 'lamina']
+
+
+pipeline:
+  - method: run_default_pipeline
+    params:
+      segmentation_params_dict: { 'method': 'morph_snakes', 'min_size': 400, 'iterations': 300, 'lambda1': 1, 'lambda2': 2 }
+      characterize_channels: [ 'lamina' ]
+

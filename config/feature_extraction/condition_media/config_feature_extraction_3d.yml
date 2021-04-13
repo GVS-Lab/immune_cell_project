@@ -1,0 +1,14 @@
+output_dir: '../../data/condition_media/hmf3a_09_04_2021/control/dapi_hp1_lamin/features/'
+module: src.pipelines.feature_extraction
+class: MultiChannelFeatureExtractionPipeline3D
+run_params:
+  input_dir: '../../data/condition_media/hmf3a_09_04_2021/control/dapi_hp1_lamin/segmented/concomp_2d/nuclear_crops_3d'
+  channels: ['dapi', 'hp1', 'lamin']
+
+
+pipeline:
+  - method: run_default_pipeline
+    params:
+      segmentation_params_dict: {'method':'morph_snakes', 'min_size': 400, 'iterations': 100, 'lambda1':1, 'lambda2':3}
+      characterize_channels: ['hp1']
+

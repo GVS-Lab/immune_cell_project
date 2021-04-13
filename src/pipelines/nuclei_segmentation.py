@@ -1,12 +1,14 @@
 import logging
 import os
-from collections import Iterable
 import copy
+import sys
 
 import numpy as np
-from skimage import exposure, filters, morphology, segmentation, measure
+import skimage.io
+from skimage import filters, morphology, segmentation, measure, exposure, color, io
 import scipy.ndimage as ndi
 import tifffile
+from tqdm import tqdm
 
 from src.utils.io import get_file_list
 
@@ -45,9 +47,25 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
 
     def read_in_image(self, index: int):
         super().read_in_image(index=index)
-        self.dapi_image = self.raw_image[:, 0, :, :]
-        self.z_projection = self.dapi_image.max(axis=0)
-        self.processed_projection = copy.deepcopy(self.z_projection)
+        if len(self.raw_image.shape) == 4:
+            self.dapi_image = self.raw_image[:, 0, :, :]
+            self.z_projection = self.dapi_image.max(axis=0)
+            self.processed_projection = copy.deepcopy(self.z_projection)
+            return True
+        else:
+            logging.critical(
+                "Image at location {} could not be read - skipping.".format(
+                    self.file_list[index]
+                )
+            )
+
+    def apply_lumination_correction(self, gamma: float = 0.7):
+        self.processed_projection = exposure.adjust_gamma(
+            self.processed_projection, gamma
+        )
+
+    def apply_morphological_closing(self):
+        self.processed_projection = morphology.closing(self.processed_projection)
 
     def apply_image_filter(self, filter_type: str, **kwargs):
         if filter_type == "median":
@@ -62,7 +80,7 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         else:
             raise NotImplementedError("Unknown filter type: {}".format(filter_type))
 
-    def clean_binary_segmentation(self, min_object_size: int = 100):
+    def clean_binary_segmentation(self, min_object_size: int = 1000):
         self.processed_projection = segmentation.clear_border(self.processed_projection)
         self.processed_projection = morphology.remove_small_objects(
             ndi.binary_fill_holes(self.processed_projection), min_size=min_object_size
@@ -77,33 +95,58 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             -d, markers, mask=self.processed_projection
         )
 
-    def get_nuclear_crops(
-        self, area_threshold: float = 6000, aspect_ratio_threshold: float = 0.8
-    ):
+    def segment_by_connected_components(self):
+        self.labeled_projection = measure.label(self.processed_projection)
+
+    def get_nuclear_crops(self, area_threshold: float = 8000):
         self.nuclear_crops = []
         regions = measure.regionprops(
             self.labeled_projection, intensity_image=self.z_projection
         )
         for region in regions:
             xmin, ymin, xmax, ymax = region.bbox
-            self.nuclear_crops.append(
-                        self.raw_image[:, :, xmin : xmax + 1, ymin : ymax + 1]
-                    )
+            if region.area <= area_threshold:
+                self.nuclear_crops.append(
+                    self.raw_image[:, :, xmin : xmax + 1, ymin : ymax + 1]
+                )
+            else:
+                self.labeled_projection[xmin : xmax + 1, ymin : ymax + 1] = 0
+                self.labeled_projection[self.labeled_projection > region.label] -= 1
+
+        if len(self.nuclear_crops) != len(np.unique(self.labeled_projection))-1:
+            print("Error sample number mismatch")
 
     def save_nuclear_crops(self):
-        output_dir = os.path.join(self.output_dir, "nuclear_crops")
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
+        nuclear_crops_3d_output_dir = os.path.join(self.output_dir, "nuclear_crops_3d")
+        nuclear_crops_2d_output_dir = os.path.join(self.output_dir, "nuclear_crops_2d")
+        if not os.path.exists(nuclear_crops_3d_output_dir):
+            os.makedirs(nuclear_crops_3d_output_dir, exist_ok=True)
+        if not os.path.exists(nuclear_crops_2d_output_dir):
+            os.makedirs(nuclear_crops_2d_output_dir, exist_ok=True)
         nuclei_file_name = os.path.split(self.file_name)[1]
-        nuclei_file_name = os.path.join(output_dir, nuclei_file_name)
-        nuclei_file_name = nuclei_file_name[: nuclei_file_name.index(".")]
+        nuclei_3d_file_name = os.path.join(
+            nuclear_crops_3d_output_dir, nuclei_file_name
+        )
+        nuclei_2d_file_name = os.path.join(
+            nuclear_crops_2d_output_dir, nuclei_file_name
+        )
+        nuclei_3d_file_name = nuclei_3d_file_name[: nuclei_3d_file_name.index(".")]
+        nuclei_2d_file_name = nuclei_2d_file_name[: nuclei_2d_file_name.index(".")]
+
         for i in range(len(self.nuclear_crops)):
-            nucleus_file = nuclei_file_name + "_{}".format(i + 1) + ".tif"
+            nucleus_3d_file = nuclei_3d_file_name + "_{}".format(i + 1) + ".tif"
+            nucleus_2d_file = nuclei_2d_file_name + "_{}".format(i + 1) + ".tif"
             nucleus = self.nuclear_crops[i]
-            # ImageJ format requires TCZYXS
+            nucleus_max_z = np.array(nucleus).max(axis=0)
+            # ImageJ format requires TZCYXS
             nucleus = np.expand_dims(nucleus, 0)
+            nucleus_max_z = np.expand_dims(nucleus_max_z, 0)
+            nucleus_max_z = np.expand_dims(nucleus_max_z, 0)
             tifffile.imsave(
-                nucleus_file, nucleus.astype(self.raw_image.dtype), imagej=True
+                nucleus_3d_file, nucleus.astype(self.raw_image.dtype), imagej=True
+            )
+            tifffile.imsave(
+                nucleus_2d_file, nucleus_max_z.astype(self.raw_image.dtype), imagej=True
             )
         logging.debug(
             "Saved {} nuclei images to {}.".format(
@@ -112,14 +155,29 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         )
 
     def save_labeled_projections(self):
-        output_dir = os.path.join(self.output_dir, "labeled_segmentation_2d")
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-        labeled_projection_file_name = os.path.split(self.file_name)[1]
+        label_output_dir = os.path.join(self.output_dir, "labeled_segmentation_2d")
+        colored_output_dir = os.path.join(self.output_dir, "colored_segmentation_2d")
+        if not os.path.exists(label_output_dir):
+            os.makedirs(label_output_dir, exist_ok=True)
+        if not os.path.exists(colored_output_dir):
+            os.makedirs(colored_output_dir, exist_ok=True)
+        labeled_projection_file = os.path.split(self.file_name)[1]
         labeled_projection_file_name = os.path.join(
-            output_dir, labeled_projection_file_name
+            label_output_dir, labeled_projection_file
         )
+        colored_projection_file_name = os.path.join(
+            colored_output_dir,
+            labeled_projection_file[: labeled_projection_file.index(".")] + ".png",
+        )
+
         tifffile.imsave(labeled_projection_file_name, self.labeled_projection)
+
+        scaled_z_projection = (self.z_projection-self.z_projection.min())/(self.z_projection.max()-self.z_projection.min()) * 255
+        scaled_z_projection = np.uint8(scaled_z_projection)
+        colored_segmentation = color.label2rgb(
+            label=self.labeled_projection, image=scaled_z_projection, bg_label=0
+        )
+        io.imsave(colored_projection_file_name, colored_segmentation)
 
     def save_raw_dapi_projections(self):
         output_dir = os.path.join(self.output_dir, "dapi_projections_2d")
@@ -129,14 +187,21 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         dapi_projection_file_name = os.path.join(output_dir, dapi_projection_file_name)
         tifffile.imsave(dapi_projection_file_name, self.z_projection)
 
-    def run_default_pipeline(self):
-        for i in range(len(self.file_list)):
-            self.read_in_image(i)
-            self.apply_image_filter(filter_type="median")
+    def run_default_pipeline(
+        self, filter_type:str="median",min_area: int = 500, max_area: int = 6000, gamma: float = 1.0, morphological_closing:bool=False,
+    ):
+        for i in tqdm(range(len(self.file_list))):
+            if not self.read_in_image(i):
+                continue
+            self.apply_image_filter(filter_type=filter_type)
+            self.apply_lumination_correction(gamma)
             self.apply_image_filter(filter_type="otsu")
-            self.clean_binary_segmentation(min_object_size=100)
-            self.segment_distance_transform_watershed(distance_threshold=0.5)
-            self.get_nuclear_crops(area_threshold=6000, aspect_ratio_threshold=0.8)
+            if morphological_closing:
+                self.apply_morphological_closing()
+            self.clean_binary_segmentation(min_object_size=min_area)
+            # self.segment_distance_transform_watershed(distance_threshold=0.5)
+            self.segment_by_connected_components()
+            self.get_nuclear_crops(area_threshold=max_area)
             self.save_nuclear_crops()
             self.save_labeled_projections()
             self.save_raw_dapi_projections()

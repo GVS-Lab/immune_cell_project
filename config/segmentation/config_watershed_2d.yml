@@ -1,9 +1,0 @@
-output_dir: '../../data/sample1_02_25_21/tcells_dapi_hp1_lamina_500nm/segmented/'
-module: src.pipelines.nuclei_segmentation
-class: NucleiSegmentationPipeline
-run_params:
-  input_dir: '../../data/sample1_02_25_21/tcells_dapi_hp1_lamina_500nm/raw/'
-
-pipeline:
-  - method: run_default_pipeline
-

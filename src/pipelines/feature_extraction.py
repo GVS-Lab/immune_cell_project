@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List
 import numpy as np
 from joblib import Parallel, delayed
@@ -69,7 +70,7 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
 
 
 class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
-    def __init__(self, input_dir: str, output_dir: str, channels: List[str]):
+    def __init__(self, input_dir: str, output_dir: str, channels: List[str], segmentation_param_dict:dict=None):
         super().__init__(output_dir=output_dir)
         self.image_locs = get_file_list(input_dir)
         self.channels = [channel.lower() for channel in channels]
@@ -77,6 +78,8 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         self.raw_images = None
         self.nuclei_masks = None
         self.features = None
+        self.segmentation_param_dict = segmentation_param_dict
+
 
     def read_in_images(self):
         raw_images = []
@@ -98,6 +101,8 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         median_smoothing="False",
         min_size: int = 400,
         n_jobs: int = 10,
+        lambda1:float=1,
+        lambda2:float=2,
         **kwargs
     ):
         dapi_channel_id = self.channels.index("dapi")
@@ -107,6 +112,8 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
                 method=method,
                 median_smoothing=median_smoothing,
                 min_size=min_size,
+                lambda1=lambda1,
+                lambda2=lambda2,
                 **kwargs
             )
             for i in tqdm(range(len(self.raw_images)))
@@ -162,8 +169,12 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             file_name = "chromatin_features_3d.csv"
         self.features.to_csv(os.path.join(self.output_dir, file_name))
 
-    def run_default_pipeline(self):
+    def run_default_pipeline(self, segmentation_params_dict:dict=None):
         self.read_in_images()
+        if segmentation_params_dict is not None:
+            self.compute_nuclei_masks(*segmentation_params_dict)
+        else:
+            self.compute_nuclei_masks()
         self.compute_nuclei_masks()
         self.add_nuclei_mask_channel()
         self.save_nuclei_images()
@@ -185,12 +196,16 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         median_smoothing="False",
         min_size: int = 400,
         n_jobs: int = 10,
+        lambda1:float=1,
+        lambda2:float=2,
         **kwargs
     ):
         super().compute_nuclei_masks(
             method=method,
             median_smoothing=median_smoothing,
             min_size=min_size,
+            lambda1=lambda1,
+            lambda2=lambda2,
             n_jobs=n_jobs,
         )
 
@@ -227,12 +242,18 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
             file_name = "nuclei_features_3d.csv"
         self.features.to_csv(os.path.join(self.output_dir, file_name))
 
-    def run_default_pipeline(self):
+    def run_default_pipeline(self, segmentation_params_dict:dict=None, characterize_channels:List=None):
         self.read_in_images()
-        self.compute_nuclei_masks()
+        if segmentation_params_dict is not None:
+            self.compute_nuclei_masks(**segmentation_params_dict)
+        else:
+            self.compute_nuclei_masks()
         self.add_nuclei_mask_channel()
         self.save_nuclei_images()
         self.extract_dna_features()
         self.extract_channel_features(channel="dapi")
-        self.extract_channel_features(channel="lamina")
+        if characterize_channels is None:
+            characterize_channels = []
+        for channel in characterize_channels:
+            self.extract_channel_features(channel=channel)
         self.save_features()
