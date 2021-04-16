@@ -14,26 +14,56 @@ from src.utils.io import get_file_list
 
 
 class SegmentationPipeline(object):
-    def __init__(self, input_dir: str, output_dir: str, file_type_filter: str = None):
+    def __init__(
+        self,
+        input_dir: str,
+        output_dir: str,
+        file_type_filter: str = None,
+        normalize_channels: bool = False,
+    ):
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.file_list = get_file_list(
             self.input_dir, file_type_filter=file_type_filter
         )
+        self.normalize_channels = normalize_channels
         self.file_name = None
         self.raw_image = None
 
     def read_in_image(self, index: int):
         self.file_name = self.file_list[index]
         self.raw_image = tifffile.imread(self.file_name)
+        if self.normalize_channels:
+            self.apply_channel_normalization()
+
+    def apply_channel_normalization(self):
+        normalized_raw_image = np.zeros_like(self.raw_image)
+        for c in range(self.raw_image.shape[1]):
+            channel_img = self.raw_image[:, c, :, :].astype(np.float32)
+            normalized_raw_image[:, c, :, :] = np.array(
+                (
+                    (channel_img - channel_img.min()) / channel_img.max()
+                    - channel_img.min()
+                )
+                * 2 ** 12,
+                dtype=np.uint16,
+            )
+        self.raw_image = normalized_raw_image
 
 
 class NucleiSegmentationPipeline(SegmentationPipeline):
-    def __init__(self, input_dir: str, output_dir: str, file_type_filter: str = None):
+    def __init__(
+        self,
+        input_dir: str,
+        output_dir: str,
+        file_type_filter: str = None,
+        normalize_channels: bool = False,
+    ):
         super().__init__(
             input_dir=input_dir,
             output_dir=output_dir,
             file_type_filter=file_type_filter,
+            normalize_channels=normalize_channels,
         )
         self.file_name = None
         self.raw_image = None
@@ -98,20 +128,14 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
     def segment_by_connected_components(self):
         self.labeled_projection = measure.label(self.processed_projection)
 
-    def get_nuclear_crops(self, area_threshold: float = 8000, normalize: bool = False):
+    def get_nuclear_crops(self, area_threshold: float = 8000):
         self.nuclear_crops = []
         regions = measure.regionprops(
             self.labeled_projection, intensity_image=self.z_projection
         )
         for region in regions:
             xmin, ymin, xmax, ymax = region.bbox
-            crop = np.array(
-                self.raw_image[:, :, xmin : xmax + 1, ymin : ymax + 1]
-            ).astype(np.float32)
-            if normalize:
-                crop = (
-                    ((crop - crop.min()) / (crop.max() - crop.min())) * 2 ** 12
-                ).astype(np.uint16)
+            crop = np.array(self.raw_image[:, :, xmin : xmax + 1, ymin : ymax + 1])
             if region.area <= area_threshold:
                 self.nuclear_crops.append(crop)
             else:
@@ -203,7 +227,6 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         max_area: int = 6000,
         gamma: float = 1.0,
         morphological_closing: bool = False,
-        normalize: bool = True,
     ):
         for i in tqdm(range(len(self.file_list))):
             if not self.read_in_image(i):
