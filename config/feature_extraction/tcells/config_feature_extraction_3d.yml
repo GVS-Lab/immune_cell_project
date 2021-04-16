@@ -1,9 +1,9 @@
-output_dir: '../../data/sample1/tcells_dapi_hp1_lamina_500nm_02_25_21/features/'
+output_dir: '../../data/sample1/tcells_dapi_gh2ax_lamina_500nm_02_25_21/features/'
 module: src.pipelines.feature_extraction
 class: MultiChannelFeatureExtractionPipeline3D
 run_params:
-  input_dir: '../../data/sample1/tcells_dapi_hp1_lamina_500nm_02_25_21/segmented/concomp_2d/nuclear_crops_3d'
-  channels: ['dapi', 'hp1', 'lamina']
+  input_dir: '../../data/sample1/tcells_dapi_gh2ax_lamina_500nm_02_25_21/segmented/concomp_2d/nuclear_crops_3d'
+  channels: ['dapi', 'gh2ax', 'lamina']
 
 
 pipeline:

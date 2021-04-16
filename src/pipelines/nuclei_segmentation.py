@@ -98,22 +98,27 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
     def segment_by_connected_components(self):
         self.labeled_projection = measure.label(self.processed_projection)
 
-    def get_nuclear_crops(self, area_threshold: float = 8000):
+    def get_nuclear_crops(self, area_threshold: float = 8000, normalize: bool = False):
         self.nuclear_crops = []
         regions = measure.regionprops(
             self.labeled_projection, intensity_image=self.z_projection
         )
         for region in regions:
             xmin, ymin, xmax, ymax = region.bbox
+            crop = np.array(
+                self.raw_image[:, :, xmin : xmax + 1, ymin : ymax + 1]
+            ).astype(np.float32)
+            if normalize:
+                crop = (
+                    ((crop - crop.min()) / (crop.max() - crop.min())) * 2 ** 12
+                ).astype(np.uint16)
             if region.area <= area_threshold:
-                self.nuclear_crops.append(
-                    self.raw_image[:, :, xmin : xmax + 1, ymin : ymax + 1]
-                )
+                self.nuclear_crops.append(crop)
             else:
                 self.labeled_projection[xmin : xmax + 1, ymin : ymax + 1] = 0
                 self.labeled_projection[self.labeled_projection > region.label] -= 1
 
-        if len(self.nuclear_crops) != len(np.unique(self.labeled_projection))-1:
+        if len(self.nuclear_crops) != len(np.unique(self.labeled_projection)) - 1:
             print("Error sample number mismatch")
 
     def save_nuclear_crops(self):
@@ -172,7 +177,11 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
 
         tifffile.imsave(labeled_projection_file_name, self.labeled_projection)
 
-        scaled_z_projection = (self.z_projection-self.z_projection.min())/(self.z_projection.max()-self.z_projection.min()) * 255
+        scaled_z_projection = (
+            (self.z_projection - self.z_projection.min())
+            / (self.z_projection.max() - self.z_projection.min())
+            * 255
+        )
         scaled_z_projection = np.uint8(scaled_z_projection)
         colored_segmentation = color.label2rgb(
             label=self.labeled_projection, image=scaled_z_projection, bg_label=0
@@ -188,7 +197,13 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         tifffile.imsave(dapi_projection_file_name, self.z_projection)
 
     def run_default_pipeline(
-        self, filter_type:str="median",min_area: int = 500, max_area: int = 6000, gamma: float = 1.0, morphological_closing:bool=False,
+        self,
+        filter_type: str = "median",
+        min_area: int = 500,
+        max_area: int = 6000,
+        gamma: float = 1.0,
+        morphological_closing: bool = False,
+        normalize: bool = True,
     ):
         for i in tqdm(range(len(self.file_list))):
             if not self.read_in_image(i):

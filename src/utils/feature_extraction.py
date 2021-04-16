@@ -169,22 +169,22 @@ def describe_image_intensities(
         "median_" + description + "_int": np.ma.median(masked_image),
         "kurtosis_" + description + "_int": kurtosis(masked_image.ravel()),
         "skewness_" + description + "_int": skew(masked_image.ravel()),
-        "normalized_mean_"
-        + description
-        + "_int": normalized_masked_image.mean(),
-        "normalized_std_"
-        + description
-        + "_int": normalized_masked_image.std(),
+        "normalized_mean_" + description + "_int": normalized_masked_image.mean(),
+        "normalized_std_" + description + "_int": normalized_masked_image.std(),
         "normalized_q25_"
         + description
         + "_int": np.quantile(normalized_masked_image, q=0.25),
         "normalized_q75_"
         + description
         + "_int": np.quantile(normalized_masked_image, q=0.75),
-        "normalized_median_" + description + "_int": np.ma.median(normalized_masked_image),
+        "normalized_median_"
+        + description
+        + "_int": np.ma.median(normalized_masked_image),
         "normalized_kurtosis_"
         + description
         + "_int": kurtosis(normalized_masked_image.ravel()),
-        "normalized_skewness_" + description + "_int": skew(normalized_masked_image.ravel()),
+        "normalized_skewness_"
+        + description
+        + "_int": skew(normalized_masked_image.ravel()),
     }
     return features

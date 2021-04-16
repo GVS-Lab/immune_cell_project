@@ -52,7 +52,7 @@ def intersection(lst1, lst2):
 
 
 def sorted_nicely(l: Iterable):
-    """ Sorts the given iterable in the way that is expected.
+    """Sorts the given iterable in the way that is expected.
 
     Required arguments:
     l -- The iterable to be sorted.
