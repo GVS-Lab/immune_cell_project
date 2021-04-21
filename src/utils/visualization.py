@@ -93,21 +93,76 @@ def explore_slices_2_samples_multichannel(data, cmap="gray"):
     return display_slice
 
 
+def color_3d_segmentation(mask: np.ndarray, intensity_image: np.ndarray):
+    mask = mask.astype(int)
+    if intensity_image.max() > 255:
+        intensity_image = np.uint8((intensity_image / intensity_image.max()) * 255)
+    colored_segmentation = []
+    for j in range(len(mask)):
+        colored_segmentation.append(
+            color.label2rgb(mask[j], intensity_image[j], alpha=0.2, bg_label=0)
+        )
+    return np.array(colored_segmentation)
+
+
 def color_3d_segmentations(masks, intensity_images):
     colored_segmentations = []
     for i in range(len(masks)):
         mask = masks[i]
         mask = mask.astype(int)
         intensity_image = intensity_images[i]
-        if intensity_image.max() > 255:
-            intensity_image = np.uint8((intensity_image / intensity_image.max()) * 255)
-        colored_segmentation = []
-        for j in range(len(mask)):
-            colored_segmentation.append(
-                color.label2rgb(mask[j], intensity_image[j], alpha=0.2, bg_label=0)
-            )
-        colored_segmentations.append(np.array(colored_segmentation))
+        colored_segmentations.append(
+            color_3d_segmentation(mask=mask, intensity_image=intensity_image)
+        )
     return colored_segmentations
+
+
+def plot_colored_3d_segmentation(mask, intensity_image):
+    mask = mask.astype(int)
+    if intensity_image.max() > 255:
+        intensity_image = np.uint8((intensity_image / intensity_image.max()) * 255)
+    colored_segmentation = color_3d_segmentation(
+        mask=mask, intensity_image=intensity_image
+    )
+    start = 0
+    end = len(mask)
+    for i in range(len(mask)):
+        if mask[i].any():
+            start = i - 1
+            break
+    for i in range(start + 1, len(mask)):
+        if not mask[i].any():
+            end = i+1
+            break
+    depth = end - start
+    fig, ax = plt.subplots(
+        nrows=3,
+        ncols=depth,
+        figsize=[depth * 3, 9],
+        gridspec_kw={"wspace": 0.0, "hspace": 0.1},
+    )
+    for j in range(start, end):
+        ax[0, j - start].imshow(
+            cv2.resize(intensity_image[j], dsize=(64, 64)), vmin=0, vmax=255
+        )
+        ax[1, j - start].imshow(
+            cv2.resize(mask[j].astype(float), dsize=(64, 64)),
+            cmap="gray",
+            vmin=0,
+            vmax=1,
+        )
+        ax[2, j - start].imshow(
+            cv2.resize(colored_segmentation[j], dsize=(64, 64)), vmin=0, vmax=255
+        )
+
+        ax[0, j - start].axis("off")
+        ax[1, j - start].axis("off")
+        ax[2, j - start].axis("off")
+        ax[0, j - start].set_aspect("auto")
+        ax[1, j - start].set_aspect("auto")
+        ax[2, j - start].set_aspect("auto")
+    fig.subplots_adjust(hspace=0.1, wspace=0.0)
+    return fig, ax
 
 
 def plot_3d_images_as_map(

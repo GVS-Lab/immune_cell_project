@@ -3,6 +3,7 @@ import sys
 from typing import List
 import numpy as np
 from joblib import Parallel, delayed
+import matplotlib.pyplot as plt
 
 from ncmo.src.utils.Run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
 import tifffile
@@ -12,10 +13,11 @@ from src.utils.feature_extraction import (
     compute_all_morphological_chromatin_features_3d,
     compute_all_channel_features_3d,
 )
-from src.utils.io import get_file_list
+from src.utils.io import get_file_list, save_figure_as_png
 import pandas as pd
 
 from src.utils.segmentation import get_nuclear_mask_in_3d
+from src.utils.visualization import plot_colored_3d_segmentation
 
 
 class FeatureExtractionPipeline(object):
@@ -121,12 +123,12 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
                 lambda2=lambda2,
                 **kwargs
             )
-            for i in tqdm(range(len(self.raw_images)))
+            for i in tqdm(range(len(self.raw_images)), desc="Compute 3D nuclei masks")
         )
 
     def add_nuclei_mask_channel(self):
         self.channels.append("nuclear_mask")
-        for i in tqdm(range(len(self.nuclei_masks))):
+        for i in tqdm(range(len(self.nuclei_masks)), desc="Add nuclear mask channel"):
             self.raw_images[i] = np.concatenate(
                 [
                     self.raw_images[i],
@@ -137,10 +139,26 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
                 axis=1,
             )
 
+    def plot_colored_nuclei_masks(self):
+        dapi_channel_id = self.channels.index("dapi")
+        output_dir = os.path.join(self.output_dir, "colored_nuclei_masks")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+
+        for i in tqdm(range(len(self.raw_images)), desc="Save colored nuclei masks"):
+            dapi_image = self.raw_images[i][:, dapi_channel_id]
+            nuclear_mask = self.nuclei_masks[i]
+            fig, ax = plot_colored_3d_segmentation(
+                mask=nuclear_mask, intensity_image=dapi_image
+            )
+            file_name = os.path.join(output_dir, self.image_ids[i] + ".png")
+            save_figure_as_png(fig=fig, file=file_name)
+            plt.close()
+
     def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None):
         all_features = []
         dapi_channel_id = self.channels.index("dapi")
-        for i in tqdm(range(len(self.raw_images))):
+        for i in tqdm(range(len(self.raw_images)), desc="Extract DNA features"):
             dapi_image = self.raw_images[i][:, dapi_channel_id]
             nucleus_mask = self.nuclei_masks[i]
             features = compute_all_morphological_chromatin_features_3d(
@@ -158,7 +176,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
 
-        for i in tqdm(range(len(self.raw_images))):
+        for i in tqdm(range(len(self.raw_images)), desc="Save nuclei images"):
             nucleus = np.expand_dims(self.raw_images[i], 0)
             tifffile.imsave(
                 os.path.join(output_dir, self.image_ids[i] + ".tif"),
@@ -221,13 +239,19 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         super().extract_dna_features(bins=bins, selem=selem)
         self.channel_features.append(self.features)
 
+    def plot_colored_nuclei_masks(self):
+        super().plot_colored_nuclei_masks()
+
     def save_nuclei_images(self, output_dir: str = None):
         super().save_nuclei_images(output_dir=output_dir)
 
-    def extract_channel_features(self, channel: str, index: int = -1):
+    def extract_channel_features(self, channel: str):
         channel_id = self.channels.index(channel)
         all_channel_features = []
-        for i in tqdm(range(len(self.raw_images))):
+        for i in tqdm(
+            range(len(self.raw_images)),
+            desc="Extract {} features".format(channel.upper()),
+        ):
             channel_image = self.raw_images[i][:, channel_id]
             nucleus_mask = self.nuclei_masks[i]
             features = compute_all_channel_features_3d(
@@ -257,6 +281,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
             self.compute_nuclei_masks()
         self.add_nuclei_mask_channel()
         self.save_nuclei_images()
+        self.plot_colored_nuclei_masks()
         self.extract_dna_features()
         self.extract_channel_features(channel="dapi")
         if characterize_channels is None:

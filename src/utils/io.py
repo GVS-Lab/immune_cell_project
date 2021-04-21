@@ -34,3 +34,7 @@ def read_tiff_from_disk(file: str) -> np.ndarray:
 
 def save_img_as_tiff(img: np.ndarray, file: str):
     imsave(file, arr=img)
+
+
+def save_figure_as_png(fig, file):
+    fig.savefig(file)

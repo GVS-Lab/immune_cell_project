@@ -1,10 +1,8 @@
 import logging
 import os
 import copy
-import sys
 
 import numpy as np
-import skimage.io
 from skimage import filters, morphology, segmentation, measure, exposure, color, io
 import scipy.ndimage as ndi
 import tifffile
@@ -128,22 +126,31 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
     def segment_by_connected_components(self):
         self.labeled_projection = measure.label(self.processed_projection)
 
-    def get_nuclear_crops(self, area_threshold: float = 8000):
+    def cleaned_labeled_segmentation(self, min_area:float=0, max_area:float=100000):
+        self.labeled_projection = morphology.remove_small_objects(self.labeled_projection, min_size=min_area)
+        regions = measure.regionprops(self.labeled_projection, intensity_image=self.z_projection)
+        for region in regions:
+            if region.area > max_area:
+                self.labeled_projection[self.labeled_projection == region.label] = 0
+        self.labeled_projection = measure.label(self.labeled_projection > 0)
+
+    def get_nuclear_crops(self):
         self.nuclear_crops = []
         regions = measure.regionprops(
             self.labeled_projection, intensity_image=self.z_projection
         )
         for region in regions:
-            xmin, ymin, xmax, ymax = region.bbox
-            crop = np.array(self.raw_image[:, :, xmin : xmax + 1, ymin : ymax + 1])
-            if region.area <= area_threshold:
-                self.nuclear_crops.append(crop)
-            else:
-                self.labeled_projection[xmin : xmax + 1, ymin : ymax + 1] = 0
-                self.labeled_projection[self.labeled_projection > region.label] -= 1
 
-        if len(self.nuclear_crops) != len(np.unique(self.labeled_projection)) - 1:
-            print("Error sample number mismatch")
+            xmin, ymin, xmax, ymax = region.bbox
+            crop = np.array(self.raw_image[:, :, xmin : xmax, ymin : ymax])
+
+            # Set all values outside of z_projected nuclear mask to 0
+            z_mask = np.zeros_like(crop)
+            for i in range(len(z_mask)):
+                for j in range(len(z_mask[0])):
+                    z_mask[i, j] = region.convex_image.astype(int)
+            masked_crop = crop * z_mask
+            self.nuclear_crops.append(masked_crop)
 
     def save_nuclear_crops(self):
         nuclear_crops_3d_output_dir = os.path.join(self.output_dir, "nuclear_crops_3d")
@@ -163,8 +170,8 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         nuclei_2d_file_name = nuclei_2d_file_name[: nuclei_2d_file_name.index(".")]
 
         for i in range(len(self.nuclear_crops)):
-            nucleus_3d_file = nuclei_3d_file_name + "_{}".format(i + 1) + ".tif"
-            nucleus_2d_file = nuclei_2d_file_name + "_{}".format(i + 1) + ".tif"
+            nucleus_3d_file = nuclei_3d_file_name + "_{}".format(i) + ".tif"
+            nucleus_2d_file = nuclei_2d_file_name + "_{}".format(i) + ".tif"
             nucleus = self.nuclear_crops[i]
             nucleus_max_z = np.array(nucleus).max(axis=0)
             # ImageJ format requires TZCYXS
@@ -239,7 +246,8 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             self.clean_binary_segmentation(min_object_size=min_area)
             # self.segment_distance_transform_watershed(distance_threshold=0.5)
             self.segment_by_connected_components()
-            self.get_nuclear_crops(area_threshold=max_area)
+            self.cleaned_labeled_segmentation(min_area=min_area, max_area=max_area)
+            self.get_nuclear_crops()
             self.save_nuclear_crops()
             self.save_labeled_projections()
             self.save_raw_dapi_projections()
