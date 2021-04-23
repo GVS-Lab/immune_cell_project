@@ -1,0 +1,14 @@
+output_dir: '../../data/sample1/tcells_dapi_gh2ax_lamina_500nm_02_25_21/segmented/'
+module: src.pipelines.nuclei_segmentation
+class: NucleiSegmentationPipeline
+run_params:
+  input_dir: '../../data/sample1/tcells_dapi_gh2ax_lamina_500nm_02_25_21/raw/'
+
+pipeline:
+  - method: run_default_pipeline
+    params:
+      min_area: 500
+      max_area: 6000
+      gamma: 1.0
+      morphological_closing: False
+      filter_type: "median"
