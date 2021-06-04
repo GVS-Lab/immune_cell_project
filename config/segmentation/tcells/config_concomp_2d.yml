@@ -1,8 +1,8 @@
-output_dir: '../../data/sample1/tcells_dapi_gh2ax_lamina_500nm_02_25_21/segmented/'
+output_dir: '../../data/tcells_hv/HV6_Tcells_Dapi_gH2AX__lamin_31_5_21_2X_16bit/segmented/'
 module: src.pipelines.nuclei_segmentation
 class: NucleiSegmentationPipeline
 run_params:
-  input_dir: '../../data/sample1/tcells_dapi_gh2ax_lamina_500nm_02_25_21/raw/'
+  input_dir: '../../data/tcells_hv/HV6_Tcells_Dapi_gH2AX__lamin_31_5_21_2X_16bit/raw/'
 
 pipeline:
   - method: run_default_pipeline

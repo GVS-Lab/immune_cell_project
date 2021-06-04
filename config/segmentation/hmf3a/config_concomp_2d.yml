@@ -1,0 +1,15 @@
+output_dir: '../../data/hmf3a_data_23_04_2021/hmf3a_tnfa10ng_dapi_hp1_actin/segmented/'
+module: src.pipelines.nuclei_segmentation
+class: NucleiSegmentationPipeline
+run_params:
+  input_dir: '../../data/hmf3a_data_23_04_2021/hmf3a_tnfa10ng_dapi_hp1_actin/raw/'
+
+pipeline:
+  - method: run_default_pipeline
+    params:
+      min_area: 10000
+      max_area: 40000
+      gamma: 0.5
+      morphological_closing: False
+      filter_type: "median"
+

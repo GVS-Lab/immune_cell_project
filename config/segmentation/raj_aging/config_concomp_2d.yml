@@ -1,0 +1,15 @@
+output_dir: '../../data/raj_aging_data/old_l1_hp1_muT_combined/segmented/'
+module: src.pipelines.nuclei_segmentation
+class: NucleiSegmentationPipeline
+run_params:
+  input_dir: '../../data/raj_aging_data/old_l1_hp1_muT_combined/filtered'
+
+pipeline:
+  - method: run_default_pipeline
+    params:
+      min_area: 10000
+      max_area: 400000
+      gamma: 0.5
+      morphological_closing: False
+      filter_type: "median"
+

@@ -61,6 +61,7 @@ def get_chromatin_features_3d(
     k: float = 1.5,
     bins: int = 10,
     selem: np.ndarray = None,
+    compute_rdp:bool = True
 ):
     masked_dapi_image = np.ma.array(dapi_image, mask=~np.array(nucleus_mask))
     hc_threshold = masked_dapi_image.mean() + k * masked_dapi_image.std()
@@ -76,11 +77,12 @@ def get_chromatin_features_3d(
         "nuclear_mean_int": masked_dapi_image.mean(),
         "nuclear_std_int": masked_dapi_image.std(),
     }
-    rdps = get_radial_distribution(
+    if compute_rdp:
+        rdps = get_radial_distribution(
         image=dapi_image, object_mask=nucleus_mask, bins=bins, selem=selem
-    )
-    for i in range(len(rdps)):
-        features["rdp_{}".format(i)] = rdps[i]
+        )
+        for i in range(len(rdps)):
+            features["rdp_{}".format(i)] = rdps[i]
     return features
 
 
@@ -89,29 +91,33 @@ def compute_all_morphological_chromatin_features_3d(
     nucleus_mask: np.ndarray,
     bins: int = 10,
     selem: np.ndarray = None,
+    compute_rdp:bool = True
 ):
     morphological_properties = [
         "convex_image",
         "equivalent_diameter",
         "extent",
-        "feret_diameter_max",
         "major_axis_length",
         "minor_axis_length",
         "solidity",
     ]
 
     morphological_features = regionprops_table(
-        np.uint8(nucleus_mask),
+       np.uint8(nucleus_mask),
         dapi_image,
         properties=morphological_properties,
         separator="_",
     )
+    # Hacky way to get rid of the extra dimensions output by morphological features by default.
+    for k, v in morphological_features.items():
+        morphological_features[k] = v[0]
+
     morphological_features["nuclear_volume"] = np.sum(nucleus_mask)
-    morphological_features["nuclear_surface_area"] = get_nuclear_surface_area(
-        nucleus_mask
-    )
+    # morphological_features["nuclear_surface_area"] = get_nuclear_surface_area(
+    #     nucleus_mask
+    # )
     morphological_features["convex_hull_vol"] = np.sum(
-        morphological_features["convex_image"][0]
+        morphological_features["convex_image"]
     )
     morphological_features["concavity_3d"] = (
         morphological_features["convex_hull_vol"]
@@ -119,10 +125,10 @@ def compute_all_morphological_chromatin_features_3d(
     ) / morphological_features["convex_hull_vol"]
     del morphological_features["convex_image"]
     chromatin_features = get_chromatin_features_3d(
-        dapi_image, nucleus_mask, bins=bins, selem=selem,
+        dapi_image, nucleus_mask, bins=bins, selem=selem, compute_rdp=compute_rdp
     )
 
-    return pd.DataFrame(dict(**morphological_features, **chromatin_features))
+    return dict(**morphological_features, **chromatin_features)
 
 
 def compute_all_channel_features_3d(

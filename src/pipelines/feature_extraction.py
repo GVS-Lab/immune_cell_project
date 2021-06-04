@@ -155,7 +155,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             save_figure_as_png(fig=fig, file=file_name)
             plt.close()
 
-    def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None):
+    def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None, compute_rdp:bool=True):
         all_features = []
         dapi_channel_id = self.channels.index("dapi")
         for i in tqdm(range(len(self.raw_images)), desc="Extract DNA features"):
@@ -163,7 +163,9 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             nucleus_mask = self.nuclei_masks[i]
             features = compute_all_morphological_chromatin_features_3d(
                 dapi_image, nucleus_mask=nucleus_mask, bins=bins, selem=selem,
+                compute_rdp=compute_rdp
             )
+            features = pd.DataFrame(features, index=[self.image_ids[i]])
             all_features.append(features)
         self.features = pd.concat(all_features)
         self.features.index = self.image_ids
@@ -235,8 +237,8 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
     def add_nuclei_mask_channel(self):
         super().add_nuclei_mask_channel()
 
-    def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None):
-        super().extract_dna_features(bins=bins, selem=selem)
+    def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None, compute_rdp:bool=True):
+        super().extract_dna_features(bins=bins, selem=selem, compute_rdp=compute_rdp)
         self.channel_features.append(self.features)
 
     def plot_colored_nuclei_masks(self):
@@ -272,7 +274,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         self.features.to_csv(os.path.join(self.output_dir, file_name))
 
     def run_default_pipeline(
-        self, segmentation_params_dict: dict = None, characterize_channels: List = None
+        self, segmentation_params_dict: dict = None, characterize_channels: List = None, compute_rdp:bool=True,
     ):
         self.read_in_images()
         if segmentation_params_dict is not None:
@@ -282,10 +284,11 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         self.add_nuclei_mask_channel()
         self.save_nuclei_images()
         self.plot_colored_nuclei_masks()
-        self.extract_dna_features()
+        self.extract_dna_features(compute_rdp=compute_rdp)
         self.extract_channel_features(channel="dapi")
         if characterize_channels is None:
             characterize_channels = []
         for channel in characterize_channels:
             self.extract_channel_features(channel=channel)
         self.save_features()
+        print("Pipeline complete.")
