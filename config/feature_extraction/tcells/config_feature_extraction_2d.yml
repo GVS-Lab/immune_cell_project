@@ -1,10 +1,13 @@
-output_dir: '../../data/tcells_hv/HV1_Tcells_Dapi_gH2AX__lamin_26_5_21_2X_16bit/features/'
+output_dir: '../../data/tcells_hv/dapi_cd8_cd4/HV4_Tcells_DAPI_CD8_CD4_21_5_21_12bit/features/'
 module: src.pipelines.feature_extraction
 class: DnaFeatureExtractionPipeline2D
 run_params:
-  raw_image_dir: '../../data/tcells_hv/HV1_Tcells_Dapi_gH2AX__lamin_26_5_21_2X_16bit/segmented/concomp_2d/dapi_projections_2d'
-  segmented_image_dir: '../../data/tcells_hv/HV1_Tcells_Dapi_gH2AX__lamin_26_5_21_2X_16bit/segmented/concomp_2d/labeled_segmentation_2d'
+  raw_image_dir: '../../data/tcells_hv/dapi_cd8_cd4/HV4_Tcells_DAPI_CD8_CD4_21_5_21_12bit/segmented/concomp_2d/dapi_projections_2d'
+  segmented_image_dir: '../../data/tcells_hv/dapi_cd8_cd4/HV4_Tcells_DAPI_CD8_CD4_21_5_21_12bit/segmented/concomp_2d/labeled_segmentation_2d'
 
 
 pipeline:
   - method: run_default_pipeline
+    params:
+      marker_image_dirs: ["../../data/tcells_hv/dapi_cd8_cd4/HV4_Tcells_DAPI_CD8_CD4_21_5_21_12bit/segmented/concomp_2d/cd8_labeled_segmentation_2d/"]
+      markers: ['cd8']

@@ -1,8 +1,8 @@
-output_dir: '../../data/tcells_hv/HV6_Tcells_Dapi_gH2AX__lamin_31_5_21_2X_16bit/segmented/'
+output_dir: '../../data/tcells_hv/dapi_cd8_cd4/HV4_Tcells_DAPI_CD8_CD4_21_5_21_12bit/segmented/'
 module: src.pipelines.nuclei_segmentation
 class: NucleiSegmentationPipeline
 run_params:
-  input_dir: '../../data/tcells_hv/HV6_Tcells_Dapi_gH2AX__lamin_31_5_21_2X_16bit/raw/'
+  input_dir: '../../data/tcells_hv/dapi_cd8_cd4/HV4_Tcells_DAPI_CD8_CD4_21_5_21_12bit/raw/'
 
 pipeline:
   - method: run_default_pipeline
@@ -12,3 +12,5 @@ pipeline:
       gamma: 1.0
       morphological_closing: False
       filter_type: "median"
+      marker_channel_dict: {'1':'cd8'}
+      marker_median_filter: True

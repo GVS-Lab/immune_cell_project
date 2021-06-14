@@ -1,6 +1,7 @@
 import logging
 import os
 import copy
+from typing import List
 
 import numpy as np
 from skimage import filters, morphology, segmentation, measure, exposure, color, io
@@ -72,6 +73,7 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         self.labeled_image = None
         self.segmentation_visualization = None
         self.nuclear_crops = None
+        self.labeled_marker_projections = dict()
 
     def read_in_image(self, index: int):
         super().read_in_image(index=index)
@@ -227,6 +229,29 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         dapi_projection_file_name = os.path.join(output_dir, dapi_projection_file_name)
         tifffile.imsave(dapi_projection_file_name, self.z_projection)
 
+    def extract_marker_labels(self, channel_id:int, channel_name:str, median_filtering:bool=True, min_size:int=0):
+        channel_image = self.raw_image[:,channel_id,:,:]
+        channel_proj = channel_image.max(axis=0)
+        if median_filtering:
+            channel_proj = filters.median(channel_proj)
+        tau = filters.threshold_otsu(channel_proj)
+        channel_mask = channel_proj > tau
+        channel_mask = ndi.binary_fill_holes(channel_mask)
+        channel_mask = measure.label(channel_mask)
+        channel_mask = morphology.remove_small_objects(channel_mask, min_size=min_size)
+        channel_mask = channel_mask > 0
+        self.labeled_marker_projections[channel_name] = self.labeled_projection * channel_mask
+
+    def save_labeled_marker_projections(self, marker:str):
+        marker_label_output_dir = os.path.join(self.output_dir, "{}_labeled_segmentation_2d".format(marker))
+        if not os.path.exists(marker_label_output_dir):
+            os.makedirs(marker_label_output_dir)
+        marker_labeled_projection_file = os.path.split(self.file_name)[1]
+        marker_labeled_projection_file_name = os.path.join(
+            marker_label_output_dir, marker_labeled_projection_file
+        )
+        tifffile.imsave(marker_labeled_projection_file_name, self.labeled_marker_projections[marker])
+
     def run_default_pipeline(
         self,
         filter_type: str = "median",
@@ -234,6 +259,8 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         max_area: int = 6000,
         gamma: float = 1.0,
         morphological_closing: bool = False,
+        marker_channel_dict:dict = None,
+        marker_median_filter: bool = True,
     ):
         for i in tqdm(range(len(self.file_list))):
             if not self.read_in_image(i):
@@ -251,3 +278,8 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             self.save_nuclear_crops()
             self.save_labeled_projections()
             self.save_raw_dapi_projections()
+            if marker_channel_dict is  not None:
+                for marker_channel_id, marker_channel_name in marker_channel_dict.items():
+                    self.extract_marker_labels(channel_id=int(marker_channel_id), channel_name=marker_channel_name,
+                                               median_filtering=marker_median_filter, min_size=min_area)
+                    self.save_labeled_marker_projections(marker=marker_channel_name)

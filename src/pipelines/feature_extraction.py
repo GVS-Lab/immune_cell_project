@@ -58,6 +58,20 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
         self.features = pd.concat(all_features)
         self.features.index = all_ids
 
+    def add_marker_labels(self, labeled_marker_image_dir:str, marker:str):
+        labeled_marker_image_locs = get_file_list(labeled_marker_image_dir)
+        self.features[marker] = np.repeat(0, len(self.features))
+        for i in range(len(labeled_marker_image_locs)):
+            labeled_marker_image_loc = labeled_marker_image_locs[i]
+            labeled_marker_image = tifffile.imread(labeled_marker_image_loc)
+            labeled_marker_image_id = os.path.split(labeled_marker_image_loc)[1]
+            labeled_marker_image_id = labeled_marker_image_id[: labeled_marker_image_id.index(".")]
+            for label in np.unique(labeled_marker_image):
+                if label > 0:
+                    self.features.loc[labeled_marker_image_id + "_{}".format(label-1), marker] = 1
+
+
+
     def save_features(self, file_name: str = None):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
@@ -66,8 +80,11 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
             file_name = "chromatin_features_2d.csv"
         self.features.to_csv(os.path.join(self.output_dir, file_name))
 
-    def run_default_pipeline(self):
+    def run_default_pipeline(self, marker_image_dirs:List=None, markers:List=None):
         self.extract_chromatin_features()
+        if marker_image_dirs is not None:
+            for i in range(len(marker_image_dirs)):
+                self.add_marker_labels(labeled_marker_image_dir=marker_image_dirs[i], marker=markers[i])
         self.save_features()
 
 
