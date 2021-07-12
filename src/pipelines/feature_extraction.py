@@ -58,19 +58,23 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
         self.features = pd.concat(all_features)
         self.features.index = all_ids
 
-    def add_marker_labels(self, labeled_marker_image_dir:str, marker:str):
+    def add_marker_labels(self, labeled_marker_image_dir: str, marker: str):
+        # Todo use label as final identifier not label-1 --> requires appropriate change in extract_chromatin function
+
         labeled_marker_image_locs = get_file_list(labeled_marker_image_dir)
         self.features[marker] = np.repeat(0, len(self.features))
         for i in range(len(labeled_marker_image_locs)):
             labeled_marker_image_loc = labeled_marker_image_locs[i]
             labeled_marker_image = tifffile.imread(labeled_marker_image_loc)
             labeled_marker_image_id = os.path.split(labeled_marker_image_loc)[1]
-            labeled_marker_image_id = labeled_marker_image_id[: labeled_marker_image_id.index(".")]
+            labeled_marker_image_id = labeled_marker_image_id[
+                : labeled_marker_image_id.index(".")
+            ]
             for label in np.unique(labeled_marker_image):
                 if label > 0:
-                    self.features.loc[labeled_marker_image_id + "_{}".format(label-1), marker] = 1
-
-
+                    self.features.loc[
+                        labeled_marker_image_id + "_{}".format(label - 1), marker
+                    ] = 1
 
     def save_features(self, file_name: str = None):
         if not os.path.exists(self.output_dir):
@@ -80,11 +84,15 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
             file_name = "chromatin_features_2d.csv"
         self.features.to_csv(os.path.join(self.output_dir, file_name))
 
-    def run_default_pipeline(self, marker_image_dirs:List=None, markers:List=None):
+    def run_default_pipeline(
+        self, marker_image_dirs: List = None, markers: List = None
+    ):
         self.extract_chromatin_features()
         if marker_image_dirs is not None:
             for i in range(len(marker_image_dirs)):
-                self.add_marker_labels(labeled_marker_image_dir=marker_image_dirs[i], marker=markers[i])
+                self.add_marker_labels(
+                    labeled_marker_image_dir=marker_image_dirs[i], marker=markers[i]
+                )
         self.save_features()
 
 
@@ -172,15 +180,20 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             save_figure_as_png(fig=fig, file=file_name)
             plt.close()
 
-    def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None, compute_rdp:bool=True):
+    def extract_dna_features(
+        self, bins: int = 10, selem: np.ndarray = None, compute_rdp: bool = True
+    ):
         all_features = []
         dapi_channel_id = self.channels.index("dapi")
         for i in tqdm(range(len(self.raw_images)), desc="Extract DNA features"):
             dapi_image = self.raw_images[i][:, dapi_channel_id]
             nucleus_mask = self.nuclei_masks[i]
             features = compute_all_morphological_chromatin_features_3d(
-                dapi_image, nucleus_mask=nucleus_mask, bins=bins, selem=selem,
-                compute_rdp=compute_rdp
+                dapi_image,
+                nucleus_mask=nucleus_mask,
+                bins=bins,
+                selem=selem,
+                compute_rdp=compute_rdp,
             )
             features = pd.DataFrame(features, index=[self.image_ids[i]])
             all_features.append(features)
@@ -254,7 +267,9 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
     def add_nuclei_mask_channel(self):
         super().add_nuclei_mask_channel()
 
-    def extract_dna_features(self, bins: int = 10, selem: np.ndarray = None, compute_rdp:bool=True):
+    def extract_dna_features(
+        self, bins: int = 10, selem: np.ndarray = None, compute_rdp: bool = True
+    ):
         super().extract_dna_features(bins=bins, selem=selem, compute_rdp=compute_rdp)
         self.channel_features.append(self.features)
 
@@ -291,7 +306,10 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         self.features.to_csv(os.path.join(self.output_dir, file_name))
 
     def run_default_pipeline(
-        self, segmentation_params_dict: dict = None, characterize_channels: List = None, compute_rdp:bool=True,
+        self,
+        segmentation_params_dict: dict = None,
+        characterize_channels: List = None,
+        compute_rdp: bool = True,
     ):
         self.read_in_images()
         if segmentation_params_dict is not None:

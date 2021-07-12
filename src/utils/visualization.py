@@ -132,7 +132,7 @@ def plot_colored_3d_segmentation(mask, intensity_image):
             break
     for i in range(start + 1, len(mask)):
         if not mask[i].any():
-            end = i+1
+            end = i + 1
             break
     depth = end - start
     fig, ax = plt.subplots(

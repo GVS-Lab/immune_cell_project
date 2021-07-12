@@ -61,7 +61,7 @@ def get_chromatin_features_3d(
     k: float = 1.5,
     bins: int = 10,
     selem: np.ndarray = None,
-    compute_rdp:bool = True
+    compute_rdp: bool = True,
 ):
     masked_dapi_image = np.ma.array(dapi_image, mask=~np.array(nucleus_mask))
     hc_threshold = masked_dapi_image.mean() + k * masked_dapi_image.std()
@@ -79,7 +79,7 @@ def get_chromatin_features_3d(
     }
     if compute_rdp:
         rdps = get_radial_distribution(
-        image=dapi_image, object_mask=nucleus_mask, bins=bins, selem=selem
+            image=dapi_image, object_mask=nucleus_mask, bins=bins, selem=selem
         )
         for i in range(len(rdps)):
             features["rdp_{}".format(i)] = rdps[i]
@@ -91,7 +91,7 @@ def compute_all_morphological_chromatin_features_3d(
     nucleus_mask: np.ndarray,
     bins: int = 10,
     selem: np.ndarray = None,
-    compute_rdp:bool = True
+    compute_rdp: bool = True,
 ):
     morphological_properties = [
         "convex_image",
@@ -103,7 +103,7 @@ def compute_all_morphological_chromatin_features_3d(
     ]
 
     morphological_features = regionprops_table(
-       np.uint8(nucleus_mask),
+        np.uint8(nucleus_mask),
         dapi_image,
         properties=morphological_properties,
         separator="_",
