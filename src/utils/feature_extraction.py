@@ -63,11 +63,11 @@ def get_chromatin_features_3d(
     selem: np.ndarray = None,
     compute_rdp: bool = True,
 ):
-    masked_dapi_image = np.ma.array(dapi_image, mask=~np.array(nucleus_mask))
+    masked_dapi_image = np.ma.array(dapi_image, mask=~np.array(nucleus_mask, dtype=bool))
     hc_threshold = masked_dapi_image.mean() + k * masked_dapi_image.std()
     hc_mask = masked_dapi_image > hc_threshold
     ec_mask = masked_dapi_image <= hc_threshold
-    hc_vol = hc_mask.sum()
+    hc_vol = hc_mask.astype(np.int8).sum()
     ec_vol = ec_mask.sum()
     total_vol = hc_vol + ec_vol
     features = {
@@ -161,8 +161,8 @@ def describe_image_intensities(
 ):
     normalized_image = cv2.normalize(image, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     normalized_image = np.clip(normalized_image, a_min=0.0, a_max=255.0)
-    masked_image = np.ma.array(image, mask=~mask)
-    normalized_masked_image = np.ma.array(normalized_image, mask=~mask)
+    masked_image = np.ma.array(image, mask=~mask.astype(bool))
+    normalized_masked_image = np.ma.array(normalized_image, mask=~mask.astype(bool))
     volume = np.sum(mask)
     features = {
         "rel_" + description + "_int": np.array(masked_image.sum() / volume),

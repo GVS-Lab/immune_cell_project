@@ -1,0 +1,19 @@
+output_dir: '../../data/tcells_hv/dapi_cd8_cd4/test/preprocessed/'
+module: src.pipelines.full_pipelines
+class: FullPreprocessingPipeline
+run_params:
+  input_dir: '../../data/tcells_hv/dapi_cd8_cd4/test/raw/'
+  channels: [ 'dna', 'cd4' ]
+
+pipeline:
+  - method: run_complete_pipeline
+    params:
+      segmentation_2d_params_dict: {'min_area': 500, 'max_area': 6000, 'gamma': 1.0, 'morphological_closing': False,
+                                     'filter_type': "median", 'binary_filter_type': 'otsu'}
+      segmentation_3d_params_dict: {'method': 'morph_snakes', 'min_size': 400, 'iterations': 300, 'lambda1': 1, 'lambda2': 2}
+      characterize_channels: [ 'cd4' ]
+      channels: [ 'dna', 'cd4' ]
+
+  - method: run_labeling_pipeline
+    params:
+      marker_channels: ['cd4']
