@@ -1,0 +1,11 @@
+output_dir: '../../data/hmf3a_data_23_04_2021/hmf3a_tnfa10ng_dapi_hp1_actin/features/'
+module: src.pipelines.feature_extraction
+class: DnaFeatureExtractionPipeline2D
+run_params:
+  raw_image_dir: '../../data/hmf3a_data_23_04_2021/hmf3a_tnfa10ng_dapi_hp1_actin/segmented/concomp_2d/dapi_projections_2d'
+  segmented_image_dir: '../../data/hmf3a_data_23_04_2021/hmf3a_tnfa10ng_dapi_hp1_actin/segmented/concomp_2d/labeled_segmentation_2d'
+
+
+pipeline:
+  - method: run_default_pipeline
+

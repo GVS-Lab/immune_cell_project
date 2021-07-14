@@ -1,14 +1,19 @@
 import logging
 import os
 import copy
-
+from typing import List
 import numpy as np
+from joblib import Parallel, delayed
+from matplotlib import pyplot as plt
 from skimage import filters, morphology, segmentation, measure, exposure, color, io
 import scipy.ndimage as ndi
 import tifffile
 from tqdm import tqdm
 
-from src.utils.io import get_file_list
+from src.utils.feature_extraction import expand_boundaries
+from src.utils.io import get_file_list, save_figure_as_png
+from src.utils.segmentation import get_nuclear_mask_in_3d, pad_image
+from src.utils.visualization import plot_colored_3d_segmentation
 
 
 class SegmentationPipeline(object):
@@ -54,6 +59,7 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         self,
         input_dir: str,
         output_dir: str,
+        channels: List[str] = None,
         file_type_filter: str = None,
         normalize_channels: bool = False,
     ):
@@ -65,19 +71,21 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         )
         self.file_name = None
         self.raw_image = None
-        self.dapi_image = None
+        self.dna_image = None
         self.z_projection = None
         self.processed_projection = None
         self.labeled_projection = None
         self.labeled_image = None
         self.segmentation_visualization = None
         self.nuclear_crops = None
+        self.labeled_marker_projections = dict()
+        self.channels = channels
 
     def read_in_image(self, index: int):
         super().read_in_image(index=index)
         if len(self.raw_image.shape) == 4:
-            self.dapi_image = self.raw_image[:, 0, :, :]
-            self.z_projection = self.dapi_image.max(axis=0)
+            self.dna_image = self.raw_image[:, 0, :, :]
+            self.z_projection = self.dna_image.max(axis=0)
             self.processed_projection = copy.deepcopy(self.z_projection)
             return True
         else:
@@ -126,52 +134,67 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
     def segment_by_connected_components(self):
         self.labeled_projection = measure.label(self.processed_projection)
 
-    def cleaned_labeled_segmentation(self, min_area:float=0, max_area:float=100000):
-        self.labeled_projection = morphology.remove_small_objects(self.labeled_projection, min_size=min_area)
-        regions = measure.regionprops(self.labeled_projection, intensity_image=self.z_projection)
+    def cleaned_labeled_segmentation(
+        self, min_area: float = 0, max_area: float = 100000
+    ):
+        self.labeled_projection = morphology.remove_small_objects(
+            self.labeled_projection, min_size=min_area
+        )
+        regions = measure.regionprops(
+            self.labeled_projection, intensity_image=self.z_projection
+        )
         for region in regions:
             if region.area > max_area:
                 self.labeled_projection[self.labeled_projection == region.label] = 0
         self.labeled_projection = measure.label(self.labeled_projection > 0)
 
-    def get_nuclear_crops(self):
+    def get_nuclear_crops(self, expansion:int=1):
         self.nuclear_crops = []
+        self.nuclear_crop_labels = []
         regions = measure.regionprops(
             self.labeled_projection, intensity_image=self.z_projection
         )
         for region in regions:
 
             xmin, ymin, xmax, ymax = region.bbox
-            crop = np.array(self.raw_image[:, :, xmin : xmax, ymin : ymax])
+            xmin = max(0, xmin-expansion)
+            ymin = max(0, ymin-expansion)
+            xmax = min(xmax+expansion, self.labeled_projection.shape[0])
+            ymax = min(ymax+expansion, self.labeled_projection.shape[1])
+            crop = np.array(self.raw_image[:, :, xmin:xmax, ymin:ymax])
 
             # Set all values outside of z_projected nuclear mask to 0
+            convex_hull = region.convex_image.astype(int)
+            padded_convex_hull = np.zeros_like(crop[0,0])
+            padded_convex_hull = pad_image(convex_hull, padded_convex_hull.shape)
+            for i in range(expansion):
+                padded_convex_hull = ndi.binary_dilation(padded_convex_hull)
             z_mask = np.zeros_like(crop)
             for i in range(len(z_mask)):
                 for j in range(len(z_mask[0])):
-                    z_mask[i, j] = region.convex_image.astype(int)
+                    z_mask[i, j] = padded_convex_hull
             masked_crop = crop * z_mask
             self.nuclear_crops.append(masked_crop)
+            self.nuclear_crop_labels.append(region.label)
 
     def save_nuclear_crops(self):
-        nuclear_crops_3d_output_dir = os.path.join(self.output_dir, "nuclear_crops_3d")
-        nuclear_crops_2d_output_dir = os.path.join(self.output_dir, "nuclear_crops_2d")
-        if not os.path.exists(nuclear_crops_3d_output_dir):
-            os.makedirs(nuclear_crops_3d_output_dir, exist_ok=True)
-        if not os.path.exists(nuclear_crops_2d_output_dir):
-            os.makedirs(nuclear_crops_2d_output_dir, exist_ok=True)
+        self.nuclei_ids = []
+        self.nuclear_crops_3d_dir = os.path.join(self.output_dir, "nuclear_crops_3d")
+        self.nuclear_crops_2d_dir = os.path.join(self.output_dir, "nuclear_crops_2d")
+        if not os.path.exists(self.nuclear_crops_3d_dir):
+            os.makedirs(self.nuclear_crops_3d_dir, exist_ok=True)
+        if not os.path.exists(self.nuclear_crops_2d_dir):
+            os.makedirs(self.nuclear_crops_2d_dir, exist_ok=True)
         nuclei_file_name = os.path.split(self.file_name)[1]
-        nuclei_3d_file_name = os.path.join(
-            nuclear_crops_3d_output_dir, nuclei_file_name
-        )
-        nuclei_2d_file_name = os.path.join(
-            nuclear_crops_2d_output_dir, nuclei_file_name
-        )
+        nuclei_3d_file_name = os.path.join(self.nuclear_crops_3d_dir, nuclei_file_name)
+        nuclei_2d_file_name = os.path.join(self.nuclear_crops_2d_dir, nuclei_file_name)
         nuclei_3d_file_name = nuclei_3d_file_name[: nuclei_3d_file_name.index(".")]
         nuclei_2d_file_name = nuclei_2d_file_name[: nuclei_2d_file_name.index(".")]
 
         for i in range(len(self.nuclear_crops)):
             nucleus_3d_file = nuclei_3d_file_name + "_{}".format(i) + ".tif"
-            nucleus_2d_file = nuclei_2d_file_name + "_{}".format(i) + ".tif"
+            self.nuclei_ids.append(nuclei_file_name[:nuclei_file_name.index(".")] + "_{}".format(i))
+            nucleus_2d_file = nuclei_2d_file_name + "_{}".format(self.nuclear_crop_labels[i]) + ".tif"
             nucleus = self.nuclear_crops[i]
             nucleus_max_z = np.array(nucleus).max(axis=0)
             # ImageJ format requires TZCYXS
@@ -190,19 +213,95 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             )
         )
 
+    def compute_nuclei_masks(
+        self,
+        method: str = "morph_snakes",
+        median_smoothing="False",
+        min_size: int = 400,
+        n_jobs: int = 10,
+        lambda1: float = 1,
+        lambda2: float = 2,
+        **kwargs
+    ):
+        dna_channel_id = self.channels.index("dna")
+        self.nuclei_masks = Parallel(n_jobs=n_jobs)(
+            delayed(get_nuclear_mask_in_3d)(
+                dna_image=self.nuclear_crops[i][:, dna_channel_id],
+                method=method,
+                median_smoothing=median_smoothing,
+                min_size=min_size,
+                lambda1=lambda1,
+                lambda2=lambda2,
+                **kwargs
+            )
+            for i in tqdm(
+                range(len(self.nuclear_crops)), desc="Compute 3D nuclei masks"
+            )
+        )
+
+    def add_nuclei_mask_channel(self):
+        self.channels.append("nuclear_mask")
+        for i in tqdm(range(len(self.nuclei_masks)), desc="Add nuclear mask channel"):
+            self.nuclear_crops[i] = np.concatenate(
+                [
+                    self.nuclear_crops[i],
+                    np.expand_dims(self.nuclei_masks[i], axis=1).astype(
+                        self.nuclear_crops[i].dtype
+                    ),
+                ],
+                axis=1,
+            )
+
+    def plot_colored_nuclei_masks(self):
+        dna_channel_id = self.channels.index("dna")
+        output_dir = os.path.join(self.output_dir, "colored_nuclei_masks")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+
+        for i in range(len(self.nuclear_crops)):
+            dna_image = self.nuclear_crops[i][:, dna_channel_id]
+            nuclear_mask = self.nuclei_masks[i]
+            fig, ax = plot_colored_3d_segmentation(
+                mask=nuclear_mask, intensity_image=dna_image
+            )
+            file_name = os.path.join(output_dir, self.nuclei_ids[i] + ".png")
+            save_figure_as_png(fig=fig, file=file_name)
+            plt.close()
+
+    def save_nuclei_images(self, nuclei_output_dir: str = None):
+        if nuclei_output_dir is None:
+            nuclei_output_dir = "nuclei_images"
+
+        self.nuclei_image_dir = os.path.join(self.output_dir, nuclei_output_dir)
+
+        if not os.path.exists(self.nuclei_image_dir):
+            os.makedirs(self.nuclei_image_dir, exist_ok=True)
+
+        for i in tqdm(range(len(self.nuclear_crops)), desc="Save nuclei images"):
+            nucleus = np.expand_dims(self.nuclear_crops[i], 0)
+            tifffile.imsave(
+                os.path.join(self.nuclei_image_dir, self.nuclei_ids[i] + ".tif"),
+                nucleus,
+                imagej=True,
+            )
+
     def save_labeled_projections(self):
-        label_output_dir = os.path.join(self.output_dir, "labeled_segmentation_2d")
-        colored_output_dir = os.path.join(self.output_dir, "colored_segmentation_2d")
-        if not os.path.exists(label_output_dir):
-            os.makedirs(label_output_dir, exist_ok=True)
-        if not os.path.exists(colored_output_dir):
-            os.makedirs(colored_output_dir, exist_ok=True)
+        self.labeled_projections_dir = os.path.join(
+            self.output_dir, "labeled_segmentation_2d"
+        )
+        self.colored_projections_dir = os.path.join(
+            self.output_dir, "colored_segmentation_2d"
+        )
+        if not os.path.exists(self.labeled_projections_dir):
+            os.makedirs(self.labeled_projections_dir, exist_ok=True)
+        if not os.path.exists(self.colored_projections_dir):
+            os.makedirs(self.colored_projections_dir, exist_ok=True)
         labeled_projection_file = os.path.split(self.file_name)[1]
         labeled_projection_file_name = os.path.join(
-            label_output_dir, labeled_projection_file
+            self.labeled_projections_dir, labeled_projection_file
         )
         colored_projection_file_name = os.path.join(
-            colored_output_dir,
+            self.colored_projections_dir,
             labeled_projection_file[: labeled_projection_file.index(".")] + ".png",
         )
 
@@ -219,35 +318,112 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         )
         io.imsave(colored_projection_file_name, colored_segmentation)
 
-    def save_raw_dapi_projections(self):
-        output_dir = os.path.join(self.output_dir, "dapi_projections_2d")
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-        dapi_projection_file_name = os.path.split(self.file_name)[1]
-        dapi_projection_file_name = os.path.join(output_dir, dapi_projection_file_name)
-        tifffile.imsave(dapi_projection_file_name, self.z_projection)
+    def save_raw_dna_projections(self):
+        self.dna_projections_dir = os.path.join(self.output_dir, "dna_projections_2d")
+        if not os.path.exists(self.dna_projections_dir):
+            os.makedirs(self.dna_projections_dir, exist_ok=True)
+        dna_projection_file_name = os.path.split(self.file_name)[1]
+        dna_projection_file_name = os.path.join(
+            self.dna_projections_dir, dna_projection_file_name
+        )
+        tifffile.imsave(dna_projection_file_name, self.z_projection)
+
+    def extract_marker_labels(
+        self,
+        channel_id: int,
+        channel_name: str,
+        median_filtering: bool = True,
+        min_size: int = 0,
+    ):
+        channel_image = self.raw_image[:, channel_id, :, :]
+        channel_proj = channel_image.max(axis=0)
+        if median_filtering:
+            channel_proj = filters.median(channel_proj)
+        tau = filters.threshold_otsu(channel_proj)
+        channel_mask = channel_proj > tau
+        channel_mask = ndi.binary_fill_holes(channel_mask)
+        channel_mask = measure.label(channel_mask)
+        channel_mask = morphology.remove_small_objects(channel_mask, min_size=min_size)
+        channel_mask = channel_mask > 0
+        self.labeled_marker_projections[channel_name] = (
+            self.labeled_projection * channel_mask
+        )
+
+    def save_labeled_marker_projections(self, marker: str):
+        self.marker_label_output_dir = os.path.join(
+            self.output_dir, "{}_labeled_segmentation_2d".format(marker)
+        )
+        if not os.path.exists(self.marker_label_output_dir):
+            os.makedirs(self.marker_label_output_dir)
+        marker_labeled_projection_file = os.path.split(self.file_name)[1]
+        marker_labeled_projection_file_name = os.path.join(
+            self.marker_label_output_dir, marker_labeled_projection_file
+        )
+        tifffile.imsave(
+            marker_labeled_projection_file_name, self.labeled_marker_projections[marker]
+        )
+
+    def run_segmentation_pipeline_2d(self, segmentation_2d_params_dict: dict = None):
+        self.apply_image_filter(filter_type=segmentation_2d_params_dict["filter_type"])
+        self.apply_lumination_correction(gamma=segmentation_2d_params_dict["gamma"])
+        self.apply_image_filter(
+            filter_type=segmentation_2d_params_dict["binary_filter_type"]
+        )
+        if (
+            "morphological_closing" in segmentation_2d_params_dict
+            and segmentation_2d_params_dict["morphological_closing"]
+        ):
+            self.apply_morphological_closing()
+        self.clean_binary_segmentation(
+            min_object_size=segmentation_2d_params_dict["min_area"]
+        )
+        self.segment_by_connected_components()
+        self.cleaned_labeled_segmentation(
+            min_area=segmentation_2d_params_dict["min_area"],
+            max_area=segmentation_2d_params_dict["max_area"],
+        )
+        if "expansion" in segmentation_2d_params_dict:
+            expansion = segmentation_2d_params_dict["expansion"]
+        else:
+            expansion = 1
+        self.get_nuclear_crops(expansion=expansion)
+        self.save_nuclear_crops()
+        self.save_labeled_projections()
+        self.save_raw_dna_projections()
+        if "marker_channel_dict" in segmentation_2d_params_dict:
+            marker_channel_dict = segmentation_2d_params_dict["marker_channel_dict"]
+            marker_median_filter = segmentation_2d_params_dict["marker_median_filter"]
+            marker_min_area = segmentation_2d_params_dict["marker_min_area"]
+            for (
+                marker_channel_id,
+                marker_channel_name,
+            ) in marker_channel_dict.items():
+                self.extract_marker_labels(
+                    channel_id=int(marker_channel_id),
+                    channel_name=marker_channel_name,
+                    median_filtering=marker_median_filter,
+                    min_size=marker_min_area,
+                )
+                self.save_labeled_marker_projections(marker=marker_channel_name)
+
+    def run_segmentation_pipeline_3d(self, segmentation_3d_params_dict: dict = None):
+        if segmentation_3d_params_dict is not None:
+            self.compute_nuclei_masks(**segmentation_3d_params_dict)
+        else:
+            self.compute_nuclei_masks()
+        self.add_nuclei_mask_channel()
+        self.save_nuclei_images()
+        self.plot_colored_nuclei_masks()
 
     def run_default_pipeline(
         self,
-        filter_type: str = "median",
-        min_area: int = 500,
-        max_area: int = 6000,
-        gamma: float = 1.0,
-        morphological_closing: bool = False,
+        segmentation_2d_params_dict: dict,
+        segmentation_3d_params_dict: dict,
+        segment_3d: bool = True,
     ):
-        for i in tqdm(range(len(self.file_list))):
+        for i in tqdm(range(len(self.file_list)), desc="Overall segmentation process"):
             if not self.read_in_image(i):
                 continue
-            self.apply_image_filter(filter_type=filter_type)
-            self.apply_lumination_correction(gamma)
-            self.apply_image_filter(filter_type="otsu")
-            if morphological_closing:
-                self.apply_morphological_closing()
-            self.clean_binary_segmentation(min_object_size=min_area)
-            # self.segment_distance_transform_watershed(distance_threshold=0.5)
-            self.segment_by_connected_components()
-            self.cleaned_labeled_segmentation(min_area=min_area, max_area=max_area)
-            self.get_nuclear_crops()
-            self.save_nuclear_crops()
-            self.save_labeled_projections()
-            self.save_raw_dapi_projections()
+            self.run_segmentation_pipeline_2d(segmentation_2d_params_dict)
+            if segment_3d:
+                self.run_segmentation_pipeline_3d(segmentation_3d_params_dict)
