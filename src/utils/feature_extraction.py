@@ -41,18 +41,24 @@ def get_radial_distribution(image, object_mask, bins=10, selem=None):
 
 def get_radial_profile_masks(mask, selem=None):
     # Todo make more flexible to work also with images with different xyz resolutions
-    convex_mask = morphology.convex_hull_image(mask)
-    masks = [convex_mask]
+    #convex_mask = morphology.convex_hull_image(mask)
+    #masks = [convex_mask]
+    masks = [mask]
     if selem is None:
-        selem = np.zeros([11, 11])
-        selem[5, :] = 1
-        selem[:, 5] = 1
-        selem_2 = np.zeros([11, 11])
-        selem_2[5, 5] = 1
-        selem = np.stack([selem_2, selem, selem_2], axis=0)
-    for i in range(len(convex_mask)):
+        selem = get_selem_z_xy_resolution(k=5)
+    for i in range(len(mask)):
         masks.append(ndi.binary_erosion(masks[-1], selem))
     return masks
+
+def expand_boundaries(mask, expansion:int=1, selem=None):
+    if selem is None:
+        selem = get_selem_z_xy_resolution(k=5)
+    expanded_mask = mask
+    for i in range(expansion):
+        expanded_mask = ndi.binary_dilation(expanded_mask, selem)
+    return expanded_mask
+
+
 
 
 def get_chromatin_features_3d(

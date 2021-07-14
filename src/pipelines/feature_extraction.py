@@ -6,7 +6,7 @@ import tifffile
 from tqdm import tqdm
 from src.utils.feature_extraction import (
     compute_all_morphological_chromatin_features_3d,
-    compute_all_channel_features_3d,
+    compute_all_channel_features_3d, expand_boundaries,
 )
 from src.utils.io import get_file_list
 import pandas as pd
@@ -177,7 +177,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         super().extract_dna_features(bins=bins, selem=selem, compute_rdp=compute_rdp)
         self.channel_features.append(self.features)
 
-    def extract_channel_features(self, channel: str):
+    def extract_channel_features(self, channel: str, expansion:int=1):
         channel_id = self.channels.index(channel)
         all_channel_features = []
         for i in tqdm(
@@ -185,7 +185,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
             desc="Extract {} features".format(channel.upper()),
         ):
             channel_image = self.raw_images[i][:, channel_id]
-            nucleus_mask = self.masks[i]
+            nucleus_mask = expand_boundaries(self.masks[i], expansion)
             features = compute_all_channel_features_3d(
                 channel_image, nucleus_mask=nucleus_mask, channel=channel, index=i
             )
@@ -208,13 +208,17 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         characterize_channels: List = None,
         compute_rdp: bool = True,
         save_features: bool = True,
+        protein_expansions:List[int]=None
     ):
+        if protein_expansions is None:
+            protein_expansions = [0]*len(characterize_channels)
         self.read_in_images()
         self.extract_dna_features(compute_rdp=compute_rdp)
         self.extract_channel_features(channel="dna")
         if characterize_channels is None:
             characterize_channels = []
-        for channel in characterize_channels:
-            self.extract_channel_features(channel=channel)
+        for i in range(len(characterize_channels)):
+            channel = characterize_channels[i]
+            self.extract_channel_features(channel=channel, expansion=protein_expansions[i])
         if save_features:
             self.save_features()

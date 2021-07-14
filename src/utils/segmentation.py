@@ -1,4 +1,7 @@
+from typing import Tuple
+
 import numpy as np
+from numpy import ndarray
 from skimage import filters, segmentation, morphology, exposure
 import scipy.ndimage as ndi
 
@@ -58,3 +61,22 @@ def get_nuclear_mask_in_3d(
     nucleus_mask = ndi.binary_fill_holes(nucleus_mask)
     nucleus_mask = morphology.remove_small_objects(nucleus_mask, min_size=min_size)
     return nucleus_mask
+
+def pad_image(image: ndarray, size: Tuple[int]) -> ndarray:
+    padded_img = np.zeros(size)
+    img_x, img_y = image.shape
+    pimg_x, pimg_y = padded_img.shape
+
+    pimg_xmid = pimg_x // 2 + pimg_x % 2
+    pimg_ymid = pimg_y // 2 + pimg_y % 2
+
+    img_xhalf = img_x // 2
+    img_yhalf = img_y // 2
+
+    padded_img[
+        pimg_xmid - img_xhalf : pimg_xmid + (img_x - img_xhalf),
+        pimg_ymid - img_yhalf : pimg_ymid + (img_y - img_yhalf),
+    ] = image
+
+    return padded_img
+

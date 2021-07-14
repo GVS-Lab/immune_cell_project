@@ -9,8 +9,10 @@ from skimage import filters, morphology, segmentation, measure, exposure, color,
 import scipy.ndimage as ndi
 import tifffile
 from tqdm import tqdm
+
+from src.utils.feature_extraction import expand_boundaries
 from src.utils.io import get_file_list, save_figure_as_png
-from src.utils.segmentation import get_nuclear_mask_in_3d
+from src.utils.segmentation import get_nuclear_mask_in_3d, pad_image
 from src.utils.visualization import plot_colored_3d_segmentation
 
 
@@ -146,23 +148,34 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
                 self.labeled_projection[self.labeled_projection == region.label] = 0
         self.labeled_projection = measure.label(self.labeled_projection > 0)
 
-    def get_nuclear_crops(self):
+    def get_nuclear_crops(self, expansion:int=1):
         self.nuclear_crops = []
+        self.nuclear_crop_labels = []
         regions = measure.regionprops(
             self.labeled_projection, intensity_image=self.z_projection
         )
         for region in regions:
 
             xmin, ymin, xmax, ymax = region.bbox
+            xmin = max(0, xmin-expansion)
+            ymin = max(0, ymin-expansion)
+            xmax = min(xmax+expansion, self.labeled_projection.shape[0])
+            ymax = min(ymax+expansion, self.labeled_projection.shape[1])
             crop = np.array(self.raw_image[:, :, xmin:xmax, ymin:ymax])
 
             # Set all values outside of z_projected nuclear mask to 0
+            convex_hull = region.convex_image.astype(int)
+            padded_convex_hull = np.zeros_like(crop[0,0])
+            padded_convex_hull = pad_image(convex_hull, padded_convex_hull.shape)
+            for i in range(expansion):
+                padded_convex_hull = ndi.binary_dilation(padded_convex_hull)
             z_mask = np.zeros_like(crop)
             for i in range(len(z_mask)):
                 for j in range(len(z_mask[0])):
-                    z_mask[i, j] = region.convex_image.astype(int)
+                    z_mask[i, j] = padded_convex_hull
             masked_crop = crop * z_mask
             self.nuclear_crops.append(masked_crop)
+            self.nuclear_crop_labels.append(region.label)
 
     def save_nuclear_crops(self):
         self.nuclei_ids = []
@@ -181,7 +194,7 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         for i in range(len(self.nuclear_crops)):
             nucleus_3d_file = nuclei_3d_file_name + "_{}".format(i) + ".tif"
             self.nuclei_ids.append(nuclei_file_name[:nuclei_file_name.index(".")] + "_{}".format(i))
-            nucleus_2d_file = nuclei_2d_file_name + "_{}".format(i) + ".tif"
+            nucleus_2d_file = nuclei_2d_file_name + "_{}".format(self.nuclear_crop_labels[i]) + ".tif"
             nucleus = self.nuclear_crops[i]
             nucleus_max_z = np.array(nucleus).max(axis=0)
             # ImageJ format requires TZCYXS
@@ -337,14 +350,14 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         )
 
     def save_labeled_marker_projections(self, marker: str):
-        marker_label_output_dir = os.path.join(
+        self.marker_label_output_dir = os.path.join(
             self.output_dir, "{}_labeled_segmentation_2d".format(marker)
         )
-        if not os.path.exists(marker_label_output_dir):
-            os.makedirs(marker_label_output_dir)
+        if not os.path.exists(self.marker_label_output_dir):
+            os.makedirs(self.marker_label_output_dir)
         marker_labeled_projection_file = os.path.split(self.file_name)[1]
         marker_labeled_projection_file_name = os.path.join(
-            marker_label_output_dir, marker_labeled_projection_file
+            self.marker_label_output_dir, marker_labeled_projection_file
         )
         tifffile.imsave(
             marker_labeled_projection_file_name, self.labeled_marker_projections[marker]
@@ -369,7 +382,11 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             min_area=segmentation_2d_params_dict["min_area"],
             max_area=segmentation_2d_params_dict["max_area"],
         )
-        self.get_nuclear_crops()
+        if "expansion" in segmentation_2d_params_dict:
+            expansion = segmentation_2d_params_dict["expansion"]
+        else:
+            expansion = 1
+        self.get_nuclear_crops(expansion=expansion)
         self.save_nuclear_crops()
         self.save_labeled_projections()
         self.save_raw_dna_projections()
@@ -404,7 +421,7 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         segmentation_3d_params_dict: dict,
         segment_3d: bool = True,
     ):
-        for i in tqdm(range(len(self.file_list))):
+        for i in tqdm(range(len(self.file_list)), desc="Overall segmentation process"):
             if not self.read_in_image(i):
                 continue
             self.run_segmentation_pipeline_2d(segmentation_2d_params_dict)
