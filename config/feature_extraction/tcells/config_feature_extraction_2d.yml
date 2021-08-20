@@ -1,4 +1,4 @@
-output_dir: '../../data/tcells_hv/dapi_cd8_cd4/HV4_Tcells_DAPI_CD8_CD4_21_5_21_12bit/features/'
+output_dir: '../../data/tcells_hv/dapi_cd8_cd4/HV4_Tcells_DAPI_CD8_CD4_21_5_21_12bit/dna_features/'
 module: src.pipelines.feature_extraction
 class: DnaFeatureExtractionPipeline2D
 run_params:

@@ -1,4 +1,4 @@
-output_dir: '../../data/tcells_hv/dapi_gh2ax_lamin/HV7_Tcells_Dapi_gH2AX__lamin_09_06_21_2X_16bit/features/'
+output_dir: '../../data/tcells_hv/dapi_gh2ax_lamin/HV7_Tcells_Dapi_gH2AX__lamin_09_06_21_2X_16bit/dna_features/'
 module: src.pipelines.feature_extraction
 class: MultiChannelFeatureExtractionPipeline3D
 run_params:
