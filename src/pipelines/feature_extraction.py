@@ -1,12 +1,12 @@
 import os
 from typing import List
 import numpy as np
-from ncmo.src.utils.Run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
+from nmco.utils.run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
 import tifffile
 from tqdm import tqdm
 from src.utils.feature_extraction import (
     compute_all_morphological_chromatin_features_3d,
-    compute_all_channel_features_3d, expand_boundaries,
+    compute_all_channel_features, expand_boundaries,
 )
 from src.utils.io import get_file_list
 import pandas as pd
@@ -38,9 +38,9 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
             nuclei_mask_loc = self.nuclei_mask_locs[i]
             nuclei_image_id = os.path.split(nuclei_image_loc)[1]
             nuclei_image_id = nuclei_image_id[: nuclei_image_id.index(".")]
-
             nuclei_features = run_nuclear_chromatin_feat_ext(
-                nuclei_image_loc, nuclei_mask_loc, "temp/"
+                nuclei_image_loc, nuclei_mask_loc, "temp/", step_size_curvature=5, hc_threshold=1.5, gclm_lengths=[5,25,100],
+                normalize=True, prominance_curvature=0.1,
             )
             nuclei_ids = [
                 nuclei_image_id + "_{}".format(i) for i in range(len(nuclei_features))
@@ -108,7 +108,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
         self.image_ids = None
         self.raw_images = None
         self.masks = None
-        self.features = None
+        self.dna_features = None
         self.segmentation_param_dict = segmentation_param_dict
 
     def read_in_images(self):
@@ -134,7 +134,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
     ):
         all_features = []
         dna_channel_id = self.channels.index("dna")
-        for i in tqdm(range(len(self.raw_images)), desc="Extract DNA features"):
+        for i in tqdm(range(len(self.raw_images)), desc="Extract DNA dna_features"):
             dna_image = self.raw_images[i][:, dna_channel_id]
             nucleus_mask = self.masks[i]
             features = compute_all_morphological_chromatin_features_3d(
@@ -146,8 +146,8 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             )
             features = pd.DataFrame(features, index=[self.image_ids[i]])
             all_features.append(features)
-        self.features = pd.concat(all_features)
-        self.features.index = self.image_ids
+        self.dna_features = pd.concat(all_features)
+        self.dna_features.index = self.image_ids
 
     def save_features(self, file_name: str = None):
         if not os.path.exists(self.output_dir):
@@ -155,7 +155,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
 
         if file_name is None:
             file_name = "chromatin_features_3d.csv"
-        self.features.to_csv(os.path.join(self.output_dir, file_name))
+        self.dna_features.to_csv(os.path.join(self.output_dir, file_name))
 
     def run_default_pipeline(self, segmentation_params_dict: dict = None):
         self.read_in_images()
@@ -166,7 +166,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
 class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
     def __init__(self, input_dir: str, output_dir: str, channels: List[str]):
         super().__init__(input_dir=input_dir, output_dir=output_dir, channels=channels)
-        self.channel_features = []
+        self.features = None
 
     def read_in_images(self):
         super().read_in_images()
@@ -175,9 +175,12 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         self, bins: int = 10, selem: np.ndarray = None, compute_rdp: bool = True
     ):
         super().extract_dna_features(bins=bins, selem=selem, compute_rdp=compute_rdp)
-        self.channel_features.append(self.features)
+        if self.features is None:
+            self.features = self.dna_features
+        else:
+            self.features = pd.concat(([self.features, self.dna_features]), axis=1)
 
-    def extract_channel_features(self, channel: str, expansion:int=1):
+    def extract_channel_features(self, channel: str, expansion:int=0, z_project:bool=False):
         channel_id = self.channels.index(channel)
         all_channel_features = []
         for i in tqdm(
@@ -186,16 +189,16 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         ):
             channel_image = self.raw_images[i][:, channel_id]
             nucleus_mask = expand_boundaries(self.masks[i], expansion)
-            features = compute_all_channel_features_3d(
-                channel_image, nucleus_mask=nucleus_mask, channel=channel, index=i
-            )
+            features = compute_all_channel_features(channel_image, nucleus_mask=nucleus_mask, channel=channel, index=i, z_project=z_project)
             all_channel_features.append(features)
-        self.features = pd.concat(all_channel_features)
-        self.features.index = self.image_ids
-        self.channel_features.append(self.features)
+        channel_features = pd.concat(all_channel_features)
+        channel_features.index = self.image_ids
+        if self.features is None:
+            self.features = channel_features
+        else:
+            self.features = pd.concat([self.features, channel_features], axis=1)
 
     def save_features(self, file_name: str = None):
-        self.features = self.channel_features[0].join(self.channel_features[1:])
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
@@ -219,6 +222,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
             characterize_channels = []
         for i in range(len(characterize_channels)):
             channel = characterize_channels[i]
-            self.extract_channel_features(channel=channel, expansion=protein_expansions[i])
+            self.extract_channel_features(channel=channel, expansion=protein_expansions[i], z_project=True)
+            self.extract_channel_features(channel=channel, expansion=protein_expansions[i], z_project=False)
         if save_features:
             self.save_features()

@@ -114,7 +114,7 @@ def compute_all_morphological_chromatin_features_3d(
         properties=morphological_properties,
         separator="_",
     )
-    # Hacky way to get rid of the extra dimensions output by morphological features by default.
+    # Hacky way to get rid of the extra dimensions output by morphological dna_features by default.
     for k, v in morphological_features.items():
         morphological_features[k] = v[0]
 
@@ -137,18 +137,25 @@ def compute_all_morphological_chromatin_features_3d(
     return dict(**morphological_features, **chromatin_features)
 
 
-def compute_all_channel_features_3d(
+def compute_all_channel_features(
     image: np.ndarray,
     nucleus_mask: np.ndarray,
     channel: str,
     index: int = 0,
     dilate: bool = False,
+    z_project:bool = False,
 ):
     if dilate:
         nucleus_mask = ndi.binary_dilation(
             nucleus_mask, structure=get_selem_z_xy_resolution()
         )
-    features = describe_image_intensities(image, description=channel, mask=nucleus_mask)
+    if z_project:
+        image = image.max(axis=0)
+        nucleus_mask = nucleus_mask.max(axis=0)
+        description = channel + "_2d"
+    else:
+        description = channel+"_3d"
+    features = describe_image_intensities(image, description=description, mask=nucleus_mask)
     return pd.DataFrame(features, index=[index])
 
 
@@ -165,6 +172,8 @@ def get_selem_z_xy_resolution(k: int = 5):
 def describe_image_intensities(
     image: np.ndarray, description: str, mask: np.ndarray = None
 ):
+    image = image.max(axis=0)
+    mask = mask.max(axis=0)
     normalized_image = cv2.normalize(image, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     normalized_image = np.clip(normalized_image, a_min=0.0, a_max=255.0)
     masked_image = np.ma.array(image, mask=~mask.astype(bool))

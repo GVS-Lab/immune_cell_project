@@ -48,7 +48,7 @@ class FullPreprocessingPipeline(Pipeline):
             features = pd.read_csv(feature_file, index_col=0)
         for marker_channel in marker_channels:
             # Todo make more elegant
-            discriminating_feature = "rel_{}_int".format(marker_channel)
+            discriminating_feature = "rel_{}_2d_int".format(marker_channel)
             selected_features = np.array(
                 features.loc[:, discriminating_feature]
             ).reshape(-1, 1)

@@ -1,4 +1,4 @@
-output_dir: '../../data/raj_aging_data/young_c_hp1_muT_combined/features/'
+output_dir: '../../data/raj_aging_data/young_c_hp1_muT_combined/dna_features/'
 module: src.pipelines.feature_extraction
 class: MultiChannelFeatureExtractionPipeline3D
 run_params:

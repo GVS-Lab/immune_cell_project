@@ -1,4 +1,4 @@
-output_dir: '../../data/hmf3a_data_23_04_2021/hmf3a_tnfa5ng_dapi_hp1_actin/features/'
+output_dir: '../../data/hmf3a_data_23_04_2021/hmf3a_tnfa5ng_dapi_hp1_actin/dna_features/'
 module: src.pipelines.feature_extraction
 class: MultiChannelFeatureExtractionPipeline3D
 run_params:
