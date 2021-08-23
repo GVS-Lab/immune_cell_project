@@ -1,7 +1,7 @@
 import os
 from typing import List
 import numpy as np
-from ncmo.src.utils.Run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
+from nmco.utils.run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
 import tifffile
 from tqdm import tqdm
 from src.utils.feature_extraction import (
@@ -38,9 +38,9 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
             nuclei_mask_loc = self.nuclei_mask_locs[i]
             nuclei_image_id = os.path.split(nuclei_image_loc)[1]
             nuclei_image_id = nuclei_image_id[: nuclei_image_id.index(".")]
-
             nuclei_features = run_nuclear_chromatin_feat_ext(
-                nuclei_image_loc, nuclei_mask_loc, "temp/"
+                nuclei_image_loc, nuclei_mask_loc, "temp/", step_size_curvature=5, hc_threshold=1.5, gclm_lengths=[5,25,100],
+                normalize=True, prominance_curvature=0.1,
             )
             nuclei_ids = [
                 nuclei_image_id + "_{}".format(i) for i in range(len(nuclei_features))

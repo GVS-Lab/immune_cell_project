@@ -3,6 +3,7 @@ import os
 import copy
 from typing import List
 import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
 from skimage import filters, morphology, segmentation, measure, exposure, color, io
@@ -221,10 +222,12 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         n_jobs: int = 10,
         lambda1: float = 1,
         lambda2: float = 2,
+        zmin:int=5,
+        zmax:int=20,
         **kwargs
     ):
         dna_channel_id = self.channels.index("dna")
-        self.nuclei_masks = Parallel(n_jobs=n_jobs)(
+        res = Parallel(n_jobs=n_jobs)(
             delayed(get_nuclear_mask_in_3d)(
                 dna_image=self.nuclear_crops[i][:, dna_channel_id],
                 method=method,
@@ -232,12 +235,19 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
                 min_size=min_size,
                 lambda1=lambda1,
                 lambda2=lambda2,
+                zmin=zmin,
+                zmax=zmax,
                 **kwargs
             )
             for i in tqdm(
                 range(len(self.nuclear_crops)), desc="Compute 3D nuclei masks"
             )
         )
+        self.nuclei_masks = []
+        self.qc_results = []
+        for item in res:
+            self.nuclei_masks.append(item[0])
+            self.qc_results.append(item[1])
 
     def add_nuclei_mask_channel(self):
         self.channels.append("nuclear_mask")
@@ -406,11 +416,20 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
                 )
                 self.save_labeled_marker_projections(marker=marker_channel_name)
 
+    def save_qc_results(self):
+        file_path = os.path.join(self.output_dir, "qc_results.csv")
+        if os.path.exists(file_path):
+            self.qc_results = pd.read_csv(file_path, index_col=0).append(pd.DataFrame(self.qc_results, index=self.nuclei_ids, columns=["qc_pass"]))
+        else:
+            self.qc_results = pd.DataFrame(self.qc_results, index=self.nuclei_ids, columns=["qc_pass"])
+        self.qc_results.to_csv(file_path)
+
     def run_segmentation_pipeline_3d(self, segmentation_3d_params_dict: dict = None):
         if segmentation_3d_params_dict is not None:
             self.compute_nuclei_masks(**segmentation_3d_params_dict)
         else:
             self.compute_nuclei_masks()
+        self.save_qc_results()
         self.add_nuclei_mask_channel()
         self.save_nuclei_images()
         self.plot_colored_nuclei_masks()
