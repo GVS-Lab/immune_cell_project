@@ -1,8 +1,8 @@
-output_dir: '../../data/pbmc_hv/proteins/HV5_PBMC_Dapi_gH2AX__lamin_13_8_21_2X_16bit_poly/preprocessed/'
+output_dir: '../../data/pbmc_pt/proteins/timepoint_1/P11_1_PBMCs_Dapi_gH2AX_Lamin_28_07_21_2X_16bit_poly/preprocessed/'
 module: src.pipelines.full_pipelines
 class: FullPreprocessingPipeline
 run_params:
-  input_dir: '../../data/pbmc_hv/proteins/HV5_PBMC_Dapi_gH2AX__lamin_13_8_21_2X_16bit_poly/raw/'
+  input_dir: '../../data/pbmc_pt/proteins/timepoint_1/P11_1_PBMCs_Dapi_gH2AX_Lamin_28_07_21_2X_16bit_poly/raw/'
   channels: [ 'dna', 'gh2ax', 'lamin' ]
 
 # expansion for the 2d segmentation should be at least 5 * max(protein_expansion) + 2 --> the factor 5 comes
