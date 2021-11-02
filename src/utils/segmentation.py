@@ -15,8 +15,8 @@ def get_nuclear_mask_in_3d(
     lambda1: int = 1,
     lambda2: int = 2,
     gamma: float = 1.0,
-    zmin:int=5,
-    zmax:int=20,
+    zmin: int = 5,
+    zmax: int = 20,
     **kwargs
 ):
     if method == "threshold_otsu":
@@ -51,14 +51,14 @@ def get_nuclear_mask_in_3d(
 
         # Run Chan-Vese segmentation
         nucleus_mask = segmentation.morphological_chan_vese(
-            dna_image,
-            iterations=iterations,
-            lambda1=lambda1,
-            lambda2=lambda2,
-            **kwargs
+            dna_image, iterations=iterations, lambda1=lambda1, lambda2=lambda2, **kwargs
         )
         n_zlayers = np.sum([np.any(zlayer) for zlayer in nucleus_mask])
-        if n_zlayers >= zmin and n_zlayers <= zmax and np.any(nucleus_mask[0]) == np.any(nucleus_mask[-1]) == False:
+        if (
+            n_zlayers >= zmin
+            and n_zlayers <= zmax
+            and np.any(nucleus_mask[0]) == np.any(nucleus_mask[-1]) == False
+        ):
             qc_pass = True
         else:
             qc_pass = False
@@ -68,6 +68,7 @@ def get_nuclear_mask_in_3d(
     nucleus_mask = ndi.binary_fill_holes(nucleus_mask)
     nucleus_mask = morphology.remove_small_objects(nucleus_mask, min_size=min_size)
     return nucleus_mask, qc_pass
+
 
 def pad_image(image: ndarray, size: Tuple[int]) -> ndarray:
     padded_img = np.zeros(size)
@@ -86,4 +87,3 @@ def pad_image(image: ndarray, size: Tuple[int]) -> ndarray:
     ] = image
 
     return padded_img
-

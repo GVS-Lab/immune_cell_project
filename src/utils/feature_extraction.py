@@ -41,8 +41,8 @@ def get_radial_distribution(image, object_mask, bins=10, selem=None):
 
 def get_radial_profile_masks(mask, selem=None):
     # Todo make more flexible to work also with images with different xyz resolutions
-    #convex_mask = morphology.convex_hull_image(mask)
-    #masks = [convex_mask]
+    # convex_mask = morphology.convex_hull_image(mask)
+    # masks = [convex_mask]
     masks = [mask]
     if selem is None:
         selem = get_selem_z_xy_resolution(k=5)
@@ -50,15 +50,14 @@ def get_radial_profile_masks(mask, selem=None):
         masks.append(ndi.binary_erosion(masks[-1], selem))
     return masks
 
-def expand_boundaries(mask, expansion:int=1, selem=None):
+
+def expand_boundaries(mask, expansion: int = 1, selem=None):
     if selem is None:
         selem = get_selem_z_xy_resolution(k=5)
     expanded_mask = mask
     for i in range(expansion):
         expanded_mask = ndi.binary_dilation(expanded_mask, selem)
     return expanded_mask
-
-
 
 
 def get_chromatin_features_3d(
@@ -69,7 +68,9 @@ def get_chromatin_features_3d(
     selem: np.ndarray = None,
     compute_rdp: bool = True,
 ):
-    masked_dapi_image = np.ma.array(dapi_image, mask=~np.array(nucleus_mask, dtype=bool))
+    masked_dapi_image = np.ma.array(
+        dapi_image, mask=~np.array(nucleus_mask, dtype=bool)
+    )
     hc_threshold = masked_dapi_image.mean() + k * masked_dapi_image.std()
     hc_mask = masked_dapi_image > hc_threshold
     ec_mask = masked_dapi_image <= hc_threshold
@@ -143,7 +144,7 @@ def compute_all_channel_features(
     channel: str,
     index: int = 0,
     dilate: bool = False,
-    z_project:bool = False,
+    z_project: bool = False,
 ):
     if dilate:
         nucleus_mask = ndi.binary_dilation(
@@ -154,8 +155,10 @@ def compute_all_channel_features(
         nucleus_mask = nucleus_mask.max(axis=0)
         description = channel + "_2d"
     else:
-        description = channel+"_3d"
-    features = describe_image_intensities(image, description=description, mask=nucleus_mask)
+        description = channel + "_3d"
+    features = describe_image_intensities(
+        image, description=description, mask=nucleus_mask
+    )
     return pd.DataFrame(features, index=[index])
 
 
@@ -172,8 +175,8 @@ def get_selem_z_xy_resolution(k: int = 5):
 def describe_image_intensities(
     image: np.ndarray, description: str, mask: np.ndarray = None
 ):
-    #image = image.max(axis=0)
-    #mask = mask.max(axis=0)
+    # image = image.max(axis=0)
+    # mask = mask.max(axis=0)
     # normalized_image = cv2.normalize(image, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     # normalized_image = np.clip(normalized_image, a_min=0.0, a_max=255.0)
     masked_image = np.ma.array(image, mask=~mask.astype(bool))

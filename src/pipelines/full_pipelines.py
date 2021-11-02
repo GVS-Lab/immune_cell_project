@@ -62,8 +62,12 @@ class FullPreprocessingPipeline(Pipeline):
             # We want to find a cut-off using GMM clustering for which we call everything lower negative and everything
             # larger positive - that is why we have to ensure that the labeling is consistent with that definition.
             # Very different variance estimates might not comply with that in the original GMM solution.
-            marker_labels[selected_features.flatten() < np.min(gm_classifier.means_)] = 0
-            marker_labels[selected_features.flatten() > np.max(gm_classifier.means_)] = 1
+            marker_labels[
+                selected_features.flatten() < np.min(gm_classifier.means_)
+            ] = 0
+            marker_labels[
+                selected_features.flatten() > np.max(gm_classifier.means_)
+            ] = 1
 
             labels[marker_channel] = marker_labels
             marker_labels = pd.DataFrame(
@@ -108,7 +112,7 @@ class FullPreprocessingPipeline(Pipeline):
         channels=None,
         characterize_channels: List = None,
         compute_rdp: bool = True,
-        protein_expansions:List=None
+        protein_expansions: List = None,
     ):
         if channels is None:
             channels = ["dna"]
@@ -119,7 +123,7 @@ class FullPreprocessingPipeline(Pipeline):
         if nuclei_image_dir is None:
             nuclei_image_dir = self.segmentation_pipeline.nuclei_image_dir
         if protein_expansions is None:
-            protein_expansions = [0]*len(characterize_channels)
+            protein_expansions = [0] * len(characterize_channels)
 
         self.nmco_pipeline = DnaFeatureExtractionPipeline2D(
             output_dir=self.output_dir,
@@ -137,7 +141,7 @@ class FullPreprocessingPipeline(Pipeline):
             characterize_channels=characterize_channels,
             compute_rdp=compute_rdp,
             save_features=False,
-            protein_expansions=protein_expansions
+            protein_expansions=protein_expansions,
         )
         np_features_3d = self.multichannel_fe_pipeline.features
         self.features = pd.concat([nmco_features, np_features_3d], axis=1)
@@ -156,7 +160,7 @@ class FullPreprocessingPipeline(Pipeline):
         channels: List[str],
         segment_3d: bool = True,
         characterize_channels: List[str] = None,
-        protein_expansions:List[int] = None
+        protein_expansions: List[int] = None,
     ):
         if protein_expansions is None:
             protein_expansions = [0] * len(characterize_channels)
@@ -166,6 +170,8 @@ class FullPreprocessingPipeline(Pipeline):
             segment_3d=segment_3d,
         )
         self.run_feature_extraction_pipeline(
-            channels=channels, characterize_channels=characterize_channels, protein_expansions=protein_expansions
+            channels=channels,
+            characterize_channels=characterize_channels,
+            protein_expansions=protein_expansions,
         )
         self.save_features()

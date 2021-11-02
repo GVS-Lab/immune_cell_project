@@ -1,4 +1,3 @@
-
 class Pipeline(object):
     def __init__(self, input_dir, output_dir):
         super().__init__()
