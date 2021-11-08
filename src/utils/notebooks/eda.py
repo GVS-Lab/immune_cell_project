@@ -1,3 +1,6 @@
+import os
+from typing import List
+
 import pandas as pd
 from sklearn.metrics import confusion_matrix, plot_roc_curve, auc
 from sklearn.model_selection import StratifiedKFold
@@ -5,15 +8,68 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+from tqdm import tqdm
 
 
-def read_in_data(feature_file_path: str, qc_file_path: str, sample: str):
+def read_in_protein_dataset(
+    data_dir, feature_file_path, qc_result_file_path, filter_samples:List[str] = None,
+):
+    all_features = []
+    subdirs = [f.path for f in os.scandir(data_dir) if f.is_dir()]
+    for subdir in tqdm(subdirs, desc="Load data"):
+        feature_path = subdir + feature_file_path
+        features = pd.read_csv(feature_path, index_col=0)
+        features["sample"] = os.path.split(subdir)[1].split("_")[0].lower()
+        features["timepoint"] = os.path.split(subdir)[1].split("_")[1]
+        qc_result_path = subdir + qc_result_file_path
+        qc_results = pd.read_csv(qc_result_path, index_col=0)
+        features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
+            qc_results.index, "qc_pass"
+        ]
+        if filter_samples is  None or np.unique(features.loc[:, "sample"])[0] in filter_samples:
+            all_features.append(features)
+    all_features_df = all_features[0].copy()
+    for i in range(1, len(all_features)):
+        all_features_df = all_features_df.append(all_features[i])
+    return all_features_df
+
+
+def read_in_marker_dataset(
+    data_dir, feature_file_path, qc_result_file_path, marker_label_file_path, filter_samples:List[str] = None,
+):
+    all_features = []
+    subdirs = [f.path for f in os.scandir(data_dir) if f.is_dir()]
+    for subdir in tqdm(subdirs, desc="Load data"):
+        feature_path = subdir + feature_file_path
+        features = pd.read_csv(feature_path, index_col=0)
+        features["sample"] = os.path.split(subdir)[1].split("_")[0].lower()
+        features["timepoint"] = os.path.split(subdir)[1].split("_")[1]
+        qc_result_path = subdir + qc_result_file_path
+        qc_results = pd.read_csv(qc_result_path, index_col=0)
+        features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
+            qc_results.index, "qc_pass"
+        ]
+        marker_labels = pd.read_csv(
+            subdir + marker_label_file_path,
+            index_col=0,
+        )
+        features = features.merge(marker_labels, left_index=True, right_index=True)
+        if filter_samples is  None or np.unique(features.loc[:, "sample"])[0] in filter_samples:
+            all_features.append(features)
+    all_features_df = all_features[0].copy()
+    for i in range(1, len(all_features)):
+        all_features_df = all_features_df.append(all_features[i])
+    return all_features_df
+
+
+def read_in_data(feature_file_path: str, qc_file_path: str, sample: str, timepoint:str="tp0"):
     features = pd.read_csv(feature_file_path, index_col=0)
     qc_results = pd.read_csv(qc_file_path, index_col=0)
     features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
         qc_results.index, "qc_pass"
     ]
     features["sample"] = sample
+    features["timepoint"] = timepoint
     return features
 
 
