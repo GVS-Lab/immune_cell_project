@@ -105,6 +105,19 @@ def preprocess_data(
             len(data.columns) - len(cleaned_data.columns), len(cleaned_data.columns)
         )
     )
+    if not cleaned_data.index.is_unique:
+        new_idc = []
+        idx_count = {}
+        idc = list(cleaned_data.index)
+        for i in range(len(cleaned_data)):
+            idx = idc[i]
+            if idx not in idx_count:
+                new_idc.append(idx)
+                idx_count[idx] = 1
+            else:
+                new_idc.append(idx +"_{}".format(idx_count[idx]))
+                idx_count[idx] = idx_count[idx] + 1
+        cleaned_data.index = np.array(new_idc).astype(str)
     return cleaned_data
 
 
