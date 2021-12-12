@@ -1,9 +1,9 @@
-output_dir: '../../data/pbmc_pt/proteins/timepoint_1/P11_1_PBMCs_Dapi_gH2AX_Lamin_28_07_21_2X_16bit_poly/preprocessed/'
+output_dir: '../../data/pbmc_pt/proteins/timepoint_3/P24_3_PBMCs_Dapi_gH2AX_LaminA_C_CD3_03_12_21_2X_16bit_2X/preprocessed/'
 module: src.pipelines.full_pipelines
 class: FullPreprocessingPipeline
 run_params:
-  input_dir: '../../data/pbmc_pt/proteins/timepoint_1/P11_1_PBMCs_Dapi_gH2AX_Lamin_28_07_21_2X_16bit_poly/raw/'
-  channels: [ 'dna', 'gh2ax', 'lamin' ]
+  input_dir: '../../data/pbmc_pt/proteins/timepoint_3/P24_3_PBMCs_Dapi_gH2AX_LaminA_C_CD3_03_12_21_2X_16bit_2X/raw/'
+  channels: [ 'dna', 'gh2ax', 'lamin', 'cd3' ]
 
 # expansion for the 2d segmentation should be at least 5 * max(protein_expansion) + 2 --> the factor 5 comes
 # from z-voxel size ~= 5* x-y_voxel size --> when dilating the nuclear boundary to capture the protein expression
@@ -14,12 +14,8 @@ pipeline:
   - method: run_complete_pipeline
     params:
       segmentation_2d_params_dict: {'min_area': 800, 'max_area': 5000, 'gamma': 0.7, 'morphological_closing': False,
-                                     'filter_type': "median", 'binary_filter_type': 'otsu', 'expansion':1,}
+                                     'filter_type': "median", 'binary_filter_type': 'otsu', 'expansion':12,}
       segmentation_3d_params_dict: {'method': 'morph_snakes', 'min_size': 400, 'iterations': 300, 'lambda1': 1, 'lambda2': 2}
-      characterize_channels: [ 'gh2ax', 'lamin' ]
-      protein_expansions: [0,0]
-      channels: [ 'dna', 'gh2ax', 'lamin' ]
-
-#  - method: run_labeling_pipeline
-#    params:
-#      marker_channels: []
+      characterize_channels: [ 'gh2ax', 'lamin', 'cd3']
+      protein_expansions: [0,0,2]
+      channels: ['dna', 'gh2ax', 'lamin', 'cd3']

@@ -3,7 +3,7 @@ from typing import List
 
 import pandas as pd
 from sklearn.metrics import confusion_matrix, plot_roc_curve, auc
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, GroupKFold
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -183,7 +183,7 @@ def plot_feature_importance(importance, names, model_type):
     # Define size of bar plot
     plt.figure(figsize=(8, 6))
     # Plot Searborn bar chart
-    sns.barplot(x=fi_df["feature_importance"], y=fi_df["feature_names"])
+    sns.barplot(x=fi_df["feature_importance"], y=fi_df["feature_names"], palette="gray")
     # Add chart labels
     plt.title(model_type + "FEATURE IMPORTANCE")
     plt.xlabel("FEATURE IMPORTANCE")
@@ -191,29 +191,52 @@ def plot_feature_importance(importance, names, model_type):
     plt.show()
 
 
-def plot_roc_for_stratified_cv(X, y, n_splits, classifier, title, pos_label=None):
-    cv = StratifiedKFold(n_splits=n_splits)
+def plot_roc_for_stratified_cv(
+    X, y, n_splits, classifier, title, pos_label=None, groups=None
+):
+    if groups is None:
+        cv = StratifiedKFold(n_splits=n_splits)
+    else:
+        cv = GroupKFold(n_splits=n_splits)
     tprs = []
     aucs = []
     mean_fpr = np.linspace(0, 1, 100)
 
     fig, ax = plt.subplots(figsize=(8, 8))
-    for i, (train, test) in enumerate(cv.split(X, y)):
-        classifier.fit(X[train], y[train])
-        viz = plot_roc_curve(
-            classifier,
-            X[test],
-            y[test],
-            name="ROC fold {}".format(i),
-            alpha=0.3,
-            lw=1,
-            ax=ax,
-            pos_label=pos_label,
-        )
-        interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
-        interp_tpr[0] = 0.0
-        tprs.append(interp_tpr)
-        aucs.append(viz.roc_auc)
+    if groups is None:
+        for i, (train, test) in enumerate(cv.split(X, y)):
+            classifier.fit(X[train], y[train])
+            viz = plot_roc_curve(
+                classifier,
+                X[test],
+                y[test],
+                name="ROC fold {}".format(i),
+                alpha=0.3,
+                lw=1,
+                ax=ax,
+                pos_label=pos_label,
+            )
+            interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
+            interp_tpr[0] = 0.0
+            tprs.append(interp_tpr)
+            aucs.append(viz.roc_auc)
+    else:
+        for i, (train, test) in enumerate(cv.split(X, y, groups=groups)):
+            classifier.fit(X[train], y[train])
+            viz = plot_roc_curve(
+                classifier,
+                X[test],
+                y[test],
+                name="ROC fold {}".format(i),
+                alpha=0.3,
+                lw=1,
+                ax=ax,
+                pos_label=pos_label,
+            )
+            interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
+            interp_tpr[0] = 0.0
+            tprs.append(interp_tpr)
+            aucs.append(viz.roc_auc)
 
     ax.plot([0, 1], [0, 1], linestyle="--", lw=2, color="r", label="Chance", alpha=0.8)
 

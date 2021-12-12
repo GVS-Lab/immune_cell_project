@@ -1,8 +1,8 @@
-output_dir: '../../data/pbmc_hv/marker/HV4_PBMCs_Dapi_CD8_CD4_29_07_21_2X_16bit/preprocessed/'
+output_dir: '../../data/other/405DAPI_647CD8_488CD4_2_12_21/preprocessed/'
 module: src.pipelines.full_pipelines
 class: FullPreprocessingPipeline
 run_params:
-  input_dir: '../../data/pbmc_hv/marker/HV4_PBMCs_Dapi_CD8_CD4_29_07_21_2X_16bit/raw/'
+  input_dir: '../../data/other/405DAPI_647CD8_488CD4_2_12_21/raw/'
   channels: [ 'dna', 'cd8', 'cd4' ]
 
 # expansion for the 2d segmentation should be at least 5 * max(protein_expansion) + 2 --> the factor 5 comes
@@ -20,6 +20,6 @@ pipeline:
       protein_expansions: [2,2]
       channels: [ 'dna', 'cd8', 'cd4' ]
 
-  - method: run_labeling_pipeline
-    params:
-      marker_channels: ['cd8', 'cd4']
+#  - method: run_labeling_pipeline
+#    params:
+#      marker_channels: ['cd8', 'cd4']
