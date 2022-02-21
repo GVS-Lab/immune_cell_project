@@ -41,15 +41,15 @@ class SegmentationPipeline(object):
             self.apply_channel_normalization()
 
     def apply_channel_normalization(self):
-        normalized_raw_image = np.zeros_like(self.raw_image)
-        for c in range(self.raw_image.shape[1]):
+        normalized_raw_image = copy.deepcopy(self.raw_image)
+        for c in [0,1]:
             channel_img = self.raw_image[:, c, :, :].astype(np.float32)
             normalized_raw_image[:, c, :, :] = np.array(
                 (
                     (channel_img - channel_img.min()) / channel_img.max()
                     - channel_img.min()
                 )
-                * 2 ** 12,
+                * ((2 ** 16) -1),
                 dtype=np.uint16,
             )
         self.raw_image = normalized_raw_image
@@ -378,6 +378,7 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         )
 
     def run_segmentation_pipeline_2d(self, segmentation_2d_params_dict: dict = None):
+        self.apply_channel_normalization()
         self.apply_image_filter(filter_type=segmentation_2d_params_dict["filter_type"])
         self.apply_lumination_correction(gamma=segmentation_2d_params_dict["gamma"])
         self.apply_image_filter(

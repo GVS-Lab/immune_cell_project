@@ -1,15 +1,16 @@
 import numpy as np
 import pandas as pd
+from scipy.stats.mstats_basic import mquantiles
 from skimage.measure import (
     regionprops_table,
     marching_cubes,
     mesh_surface_area,
     regionprops,
 )
-from skimage import morphology
+from skimage import morphology, feature
 import scipy.ndimage as ndi
 from scipy.interpolate import interp1d
-from scipy.stats import kurtosis, skew
+from scipy.stats.mstats import kurtosis, skew
 import cv2
 
 
@@ -120,9 +121,6 @@ def compute_all_morphological_chromatin_features_3d(
         morphological_features[k] = v[0]
 
     morphological_features["nuclear_volume"] = np.sum(nucleus_mask)
-    # morphological_features["nuclear_surface_area"] = get_nuclear_surface_area(
-    #     nucleus_mask
-    # )
     morphological_features["convex_hull_vol"] = np.sum(
         morphological_features["convex_image"]
     )
@@ -175,12 +173,7 @@ def get_selem_z_xy_resolution(k: int = 5):
 def describe_image_intensities(
     image: np.ndarray, description: str, mask: np.ndarray = None
 ):
-    # image = image.max(axis=0)
-    # mask = mask.max(axis=0)
-    # normalized_image = cv2.normalize(image, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-    # normalized_image = np.clip(normalized_image, a_min=0.0, a_max=255.0)
     masked_image = np.ma.array(image, mask=~mask.astype(bool))
-    # normalized_masked_image = np.ma.array(normalized_image, mask=~mask.astype(bool))
     volume = np.sum(mask)
     features = {
         "rel_" + description + "_int": np.array(masked_image.sum() / volume),
@@ -188,27 +181,29 @@ def describe_image_intensities(
         "max_" + description + "_int": np.max(masked_image),
         "mean_" + description + "_int": masked_image.mean(),
         "std_" + description + "_int": masked_image.std(),
-        "q25_" + description + "_int": np.quantile(masked_image, q=0.25),
-        "q75_" + description + "_int": np.quantile(masked_image, q=0.75),
+        "q25_" + description + "_int": np.nanpercentile(masked_image.astype(float).filled(np.nan), 25),
+        "q75_" + description + "_int": np.nanpercentile(masked_image.astype(float).filled(np.nan), 75),
         "median_" + description + "_int": np.ma.median(masked_image),
         "kurtosis_" + description + "_int": kurtosis(masked_image.ravel()),
         "skewness_" + description + "_int": skew(masked_image.ravel()),
-        # "normalized_mean_" + description + "_int": normalized_masked_image.mean(),
-        # "normalized_std_" + description + "_int": normalized_masked_image.std(),
-        # "normalized_q25_"
-        # + description
-        # + "_int": np.quantile(normalized_masked_image, q=0.25),
-        # "normalized_q75_"
-        # + description
-        # + "_int": np.quantile(normalized_masked_image, q=0.75),
-        # "normalized_median_"
-        # + description
-        # + "_int": np.ma.median(normalized_masked_image),
-        # "normalized_kurtosis_"
-        # + description
-        # + "_int": kurtosis(normalized_masked_image.ravel()),
-        # "normalized_skewness_"
-        # + description
-        # + "_int": skew(normalized_masked_image.ravel()),
     }
     return features
+
+
+def get_n_foci(
+    image, description, mask, index, z_project=False, min_dist=3, threshold_rel=0.75
+):
+    masked = np.ma.array(image, mask=~(mask).astype(bool))
+    q995 = np.nanpercentile(masked.astype(float).filled(np.nan), 99.5)
+    std_threshold = masked.mean() + masked.std()
+    if z_project:
+        masked = masked.max(axis=0)
+    peaks = feature.peak_local_max(
+        masked,
+        threshold_abs=max(std_threshold, threshold_rel * q995),
+        min_distance=min_dist,
+        indices=True,
+        exclude_border=False,
+    )
+    result = pd.DataFrame({"{}_foci_count".format(description):len(peaks)}, index=[index])
+    return result
