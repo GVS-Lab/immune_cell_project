@@ -1,0 +1,14 @@
+output_dir: '../../data/glioma/classification'
+module: src.preprocessing.celltype_file_generation
+class: DataFileGenerator
+run_params:
+  root_dir: "../../data/glioma/marker"
+  marker_file_loc: "preprocessed/full_pipeline/marker_labels/marker_labels.csv"
+  nmco_file_loc: "preprocessed/full_pipeline/nuclear_features.csv"
+  image_dir_loc: "preprocessed/full_pipeline/segmentation/nuclei_images"
+  drop_nmco_feats: ["orientation", "label"]
+  drop_nmco_feats_searchstr: ["-", "int", "bbox"]
+
+pipeline:
+  - method: create_data_label_dfs
+  - method: save_data_label_dfs

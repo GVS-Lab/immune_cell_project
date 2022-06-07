@@ -181,8 +181,12 @@ def describe_image_intensities(
         "max_" + description + "_int": np.max(masked_image),
         "mean_" + description + "_int": masked_image.mean(),
         "std_" + description + "_int": masked_image.std(),
-        "q25_" + description + "_int": np.nanpercentile(masked_image.astype(float).filled(np.nan), 25),
-        "q75_" + description + "_int": np.nanpercentile(masked_image.astype(float).filled(np.nan), 75),
+        "q25_"
+        + description
+        + "_int": np.nanpercentile(masked_image.astype(float).filled(np.nan), 25),
+        "q75_"
+        + description
+        + "_int": np.nanpercentile(masked_image.astype(float).filled(np.nan), 75),
         "median_" + description + "_int": np.ma.median(masked_image),
         "kurtosis_" + description + "_int": kurtosis(masked_image.ravel()),
         "skewness_" + description + "_int": skew(masked_image.ravel()),
@@ -205,5 +209,7 @@ def get_n_foci(
         indices=True,
         exclude_border=False,
     )
-    result = pd.DataFrame({"{}_foci_count".format(description):len(peaks)}, index=[index])
+    result = pd.DataFrame(
+        {"{}_foci_count".format(description): len(peaks)}, index=[index]
+    )
     return result

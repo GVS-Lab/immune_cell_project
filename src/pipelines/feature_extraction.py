@@ -4,12 +4,13 @@ import numpy as np
 from nmco.utils.run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
 import tifffile
 from tqdm import tqdm
-from src.utils.feature_extraction import (
+from src.utils.basic.feature_extraction import (
     compute_all_morphological_chromatin_features_3d,
     compute_all_channel_features,
-    expand_boundaries, get_n_foci,
+    expand_boundaries,
+    get_n_foci,
 )
-from src.utils.io import get_file_list
+from src.utils.basic.io import get_file_list
 import pandas as pd
 
 
@@ -187,7 +188,14 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         else:
             self.features = pd.concat(([self.features, self.dna_features]), axis=1)
 
-    def extract_foci_counts(self, channel:str, z_project=False, min_dist=3, threshold_rel:float=None, expansion=0):
+    def extract_foci_counts(
+        self,
+        channel: str,
+        z_project=False,
+        min_dist=3,
+        threshold_rel: float = None,
+        expansion=0,
+    ):
         channel_id = self.channels.index(channel)
         all_channel_foci = []
 
@@ -198,14 +206,14 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
             channel_image = self.raw_images[i][:, channel_id]
             nucleus_mask = expand_boundaries(self.masks[i], expansion)
             features = get_n_foci(
-            channel_image,
-            mask=nucleus_mask,
-            description=channel,
-            index=i,
+                channel_image,
+                mask=nucleus_mask,
+                description=channel,
+                index=i,
                 z_project=z_project,
                 min_dist=min_dist,
-                threshold_rel=threshold_rel
-        )
+                threshold_rel=threshold_rel,
+            )
             all_channel_foci.append(features)
 
         channel_features = pd.concat(all_channel_foci)
@@ -272,6 +280,8 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
                 channel=channel, expansion=protein_expansions[i], z_project=False
             )
             if channel.lower() == "gh2ax":
-                self.extract_foci_counts(channel=channel, min_dist=3, threshold_rel=1, expansion=0)
+                self.extract_foci_counts(
+                    channel=channel, min_dist=3, threshold_rel=1, expansion=0
+                )
         if save_features:
             self.save_features()

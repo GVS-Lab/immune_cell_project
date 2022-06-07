@@ -1,8 +1,14 @@
+import logging
+import os
+
 import matplotlib.pyplot as plt
+import pandas as pd
+from numpy import ndarray
 from skimage import color
 import numpy as np
-from typing import List
+from typing import List, Iterable
 import cv2
+from sklearn.metrics import ConfusionMatrixDisplay
 
 
 def show_plane(ax, plane, cmap="gray", title=None):
@@ -200,3 +206,67 @@ def plot_3d_images_as_map(
             fig.subplots_adjust(hspace=0.0, wspace=0.0)
             plt.subplots_adjust(hspace=0.0, wspace=0.0)
             plt.show()
+
+
+def plot_confusion_matrices(
+    confusion_matrices_dict: dict, output_dir: str, display_labels: np.ndarray = None
+):
+    for k, cmatrix in confusion_matrices_dict.items():
+        c = cmatrix.shape[0] // 2
+        fig, ax = plt.subplots(figsize=[6 + c, 4 + c])
+        cmd = ConfusionMatrixDisplay(cmatrix, display_labels=display_labels)
+        cmd.plot(ax=ax, values_format=".2f", xticks_rotation="vertical")
+        plt.savefig(os.path.join(output_dir, "confusion_matrix_{}.png".format(str(k))))
+        plt.close()
+
+
+def save_confusion_matrices(
+    confusion_matrices_dict: dict, output_dir: str, labels: Iterable
+):
+    for k, cmatrix in confusion_matrices_dict.items():
+        cmatrix_df = pd.DataFrame(cmatrix, columns=labels, index=labels)
+        cmatrix_df.to_csv(os.path.join(output_dir, "{}_cmatrix.csv".format(k)))
+
+
+def plot_train_val_hist(
+    training_history: ndarray,
+    validation_history: ndarray,
+    output_dir: str,
+    y_label: str,
+    title=None,
+    posfix: str = "",
+):
+    r""" A function to visualize the evolution of the training and validation loss during the training.
+    Parameters
+    ----------
+    training_history : list, numpy.ndarray
+        The training loss for the individual training epochs.
+    validation_history : list, numpy.ndarray
+        The validation lss for the individual training epochs.
+    output_dir : str
+        The path of the directory the visualization of the evolution of the loss is stored in.
+    y_label : str
+        The label of the y-axis of the visualization.
+    title : None, str
+        The title of the visualization. If ``None`` is given, it is `'Fitting History` by default.
+    posfix : str
+        An additional posfix for the file path.
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    mpl_logger = logging.getLogger("matplotlib")
+    mpl_logger.setLevel(logging.WARNING)
+    epochs = np.arange(len(training_history))
+    lines = plt.plot(epochs, training_history, epochs, validation_history)
+    plt.ylabel(y_label)
+    plt.xlabel("Epoch")
+    plt.legend(
+        ("Training Loss", "Validation Loss", "Validation loss"),
+        loc="upper right",
+        markerscale=2.0,
+    )
+    if title is None:
+        title = "Fitting History"
+    plt.title(title)
+    plt.savefig(output_dir + "plotted_fitting_hist{}.png".format(posfix))
+    plt.close()

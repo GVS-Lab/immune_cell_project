@@ -3,6 +3,8 @@ import time
 from typing import Iterable
 import re
 
+import numpy as np
+
 
 def get_timestamp():
     r""" A function to get the current time as a formatted string.
@@ -61,3 +63,7 @@ def sorted_nicely(l: Iterable):
     convert = lambda text: int(text) if text.isdigit() else text
     alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
     return sorted(l, key=alphanum_key)
+
+
+def combine_path(x):
+    return np.array("/".join(x), dtype=object)

@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import List
-from src.utils.base import sorted_nicely
+from src.utils.basic.base import sorted_nicely
 import numpy as np
 from skimage.io import imread, imsave
 
@@ -24,7 +24,7 @@ def get_file_list(
                 if not file_ending:
                     file = file[: file.index(".")]
                 if absolute_path:
-                    list_of_data_locs.append(os.path.join(root_dir, file))
+                    list_of_data_locs.append(os.path.abspath(os.path.join(root_dir, file)))
                 else:
                     list_of_data_locs.append(file)
     return sorted_nicely(list_of_data_locs)

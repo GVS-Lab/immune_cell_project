@@ -8,7 +8,7 @@ import sys
 import yaml
 
 from pprint import pformat
-from src.utils.base import get_timestamp, key_in_dict
+from src.utils.basic.base import get_timestamp, key_in_dict
 
 sys.path.append("../../.")
 

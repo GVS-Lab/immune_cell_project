@@ -11,10 +11,9 @@ import scipy.ndimage as ndi
 import tifffile
 from tqdm import tqdm
 
-from src.utils.feature_extraction import expand_boundaries
-from src.utils.io import get_file_list, save_figure_as_png
-from src.utils.segmentation import get_nuclear_mask_in_3d, pad_image
-from src.utils.visualization import plot_colored_3d_segmentation
+from src.utils.basic.io import get_file_list, save_figure_as_png
+from src.utils.basic.segmentation import get_nuclear_mask_in_3d, pad_image
+from src.utils.basic.visualization import plot_colored_3d_segmentation
 
 
 class SegmentationPipeline(object):
@@ -42,14 +41,14 @@ class SegmentationPipeline(object):
 
     def apply_channel_normalization(self):
         normalized_raw_image = copy.deepcopy(self.raw_image)
-        for c in [0,1]:
+        for c in [0, 1]:
             channel_img = self.raw_image[:, c, :, :].astype(np.float32)
             normalized_raw_image[:, c, :, :] = np.array(
                 (
                     (channel_img - channel_img.min()) / channel_img.max()
                     - channel_img.min()
                 )
-                * ((2 ** 16) -1),
+                * ((2 ** 16) - 1),
                 dtype=np.uint16,
             )
         self.raw_image = normalized_raw_image

@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 
 def read_in_protein_dataset(
-    data_dir, feature_file_path, qc_result_file_path, filter_samples:List[str] = None,
+    data_dir, feature_file_path, qc_result_file_path, filter_samples: List[str] = None,
 ):
     all_features = []
     subdirs = [f.path for f in os.scandir(data_dir) if f.is_dir()]
@@ -26,7 +26,10 @@ def read_in_protein_dataset(
         features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
             qc_results.index, "qc_pass"
         ]
-        if filter_samples is  None or np.unique(features.loc[:, "sample"])[0] in filter_samples:
+        if (
+            filter_samples is None
+            or np.unique(features.loc[:, "sample"])[0] in filter_samples
+        ):
             all_features.append(features)
     all_features_df = all_features[0].copy()
     for i in range(1, len(all_features)):
@@ -35,7 +38,11 @@ def read_in_protein_dataset(
 
 
 def read_in_marker_dataset(
-    data_dir, feature_file_path, qc_result_file_path, marker_label_file_path, filter_samples:List[str] = None,
+    data_dir,
+    feature_file_path,
+    qc_result_file_path,
+    marker_label_file_path,
+    filter_samples: List[str] = None,
 ):
     all_features = []
     subdirs = [f.path for f in os.scandir(data_dir) if f.is_dir()]
@@ -49,12 +56,12 @@ def read_in_marker_dataset(
         features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
             qc_results.index, "qc_pass"
         ]
-        marker_labels = pd.read_csv(
-            subdir + marker_label_file_path,
-            index_col=0,
-        )
+        marker_labels = pd.read_csv(subdir + marker_label_file_path, index_col=0,)
         features = features.merge(marker_labels, left_index=True, right_index=True)
-        if filter_samples is  None or np.unique(features.loc[:, "sample"])[0] in filter_samples:
+        if (
+            filter_samples is None
+            or np.unique(features.loc[:, "sample"])[0] in filter_samples
+        ):
             all_features.append(features)
     all_features_df = all_features[0].copy()
     for i in range(1, len(all_features)):
@@ -62,7 +69,9 @@ def read_in_marker_dataset(
     return all_features_df
 
 
-def read_in_data(feature_file_path: str, qc_file_path: str, sample: str, timepoint:str="tp0"):
+def read_in_data(
+    feature_file_path: str, qc_file_path: str, sample: str, timepoint: str = "tp0"
+):
     features = pd.read_csv(feature_file_path, index_col=0)
     qc_results = pd.read_csv(qc_file_path, index_col=0)
     features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
@@ -115,7 +124,7 @@ def preprocess_data(
                 new_idc.append(idx)
                 idx_count[idx] = 1
             else:
-                new_idc.append(idx +"_{}".format(idx_count[idx]))
+                new_idc.append(idx + "_{}".format(idx_count[idx]))
                 idx_count[idx] = idx_count[idx] + 1
         cleaned_data.index = np.array(new_idc).astype(str)
     return cleaned_data
