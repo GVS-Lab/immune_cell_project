@@ -39,9 +39,11 @@ class SegmentationPipeline(object):
         if self.normalize_channels:
             self.apply_channel_normalization()
 
-    def apply_channel_normalization(self):
+    def apply_channel_normalization(self, channels=None):
+        if channels is None:
+            channels = []
         normalized_raw_image = copy.deepcopy(self.raw_image)
-        for c in [0, 1]:
+        for c in channels:
             channel_img = self.raw_image[:, c, :, :].astype(np.float32)
             normalized_raw_image[:, c, :, :] = np.array(
                 (
@@ -377,7 +379,11 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         )
 
     def run_segmentation_pipeline_2d(self, segmentation_2d_params_dict: dict = None):
-        self.apply_channel_normalization()
+        if "channels" in segmentation_2d_params_dict:
+            channels = [self.channels.index(c) for c in segmentation_2d_params_dict["channels"]]
+        else:
+            channels = [self.channels.index("dna")]
+        self.apply_channel_normalization(channels=channels)
         self.apply_image_filter(filter_type=segmentation_2d_params_dict["filter_type"])
         self.apply_lumination_correction(gamma=segmentation_2d_params_dict["gamma"])
         self.apply_image_filter(

@@ -3,7 +3,7 @@ module: src.experiments.embedding
 class: EmbeddingExperiment
 run_params:
   data_config: {'metadata_file':'../../data/meningioma/classification/preprocessed/image_locs_and_labels.csv',
-                      'label_col': 'cd4', 'image_file_col':'image_loc',
+                      'label_col': 'cd4', 'image_file_col':'image_loc', 'filter_dict':{'timepoint':[1]},
                       'data_key':'image', 'label_key':'label', 'index_key':'image_file',
                       'pseudo_rgb':True}
 

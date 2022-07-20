@@ -3,7 +3,9 @@ module: src.pipelines.full_pipelines
 class: FullPreprocessingPipeline
 run_params:
   input_dir: ''
+  #channels: ['dna', 'cd8', 'cd4']
   channels: [ 'dna', 'cd16', 'cd4', 'cd8']
+
 
 # expansion for the 2d segmentation should be at least 5 * max(protein_expansion) + 2 --> the factor 5 comes
 # from z-voxel size ~= 5* x-y_voxel size --> when dilating the nuclear boundary to capture the protein expression
@@ -16,12 +18,16 @@ pipeline:
       dna_projections_dir: "../../data/meningioma/marker/timepoint_1/P48_1_PBMCs_Dapi_CD16_CD4_CD8_22_2_21_2X_16bit_2X/preprocessed/full_pipeline/segmentation/dna_projections_2d"
       labeled_projections_dir: "../../data/meningioma/marker/timepoint_1/P48_1_PBMCs_Dapi_CD16_CD4_CD8_22_2_21_2X_16bit_2X/preprocessed/full_pipeline/segmentation/labeled_segmentation_2d"
       nuclei_image_dir: "../../data/meningioma/marker/timepoint_1/P48_1_PBMCs_Dapi_CD16_CD4_CD8_22_2_21_2X_16bit_2X/preprocessed/full_pipeline/segmentation/nuclei_images"
+      #channels: ['dna', 'cd8', 'cd4']
       channels: ["dna", "cd16", "cd4", "cd8"]
+      #characterize_channels: ['cd8', 'cd4']
       characterize_channels: ['cd16', 'cd4', 'cd8']
       compute_rdp: True
+      #protein_expansions: [2,2]
       protein_expansions: [2,2,2]
   - method: save_features
 
   - method: run_labeling_pipeline
     params:
+      #marker_channels: ['cd8', 'cd4']
       marker_channels: ['cd16', 'cd4', 'cd8']

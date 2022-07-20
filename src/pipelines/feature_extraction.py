@@ -154,6 +154,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             )
             features = pd.DataFrame(features, index=[self.image_ids[i]])
             all_features.append(features)
+
         self.dna_features = pd.concat(all_features)
         self.dna_features.index = self.image_ids
 

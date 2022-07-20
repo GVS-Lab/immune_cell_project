@@ -1,10 +1,12 @@
-output_dir: '../../data/glioma/classification/celltypes/'
+output_dir: '../../data/meningioma/classification/celltypes/tp3/'
 module: src.experiments.embedding
 class: EmbeddingExperiment
 run_params:
-  data_config: {'feature_label_file':'../../data/glioma/classification/preprocessed/nmco_feats_and_labels.csv',
+  data_config: {'feature_label_file':'../../data/meningioma/classification/preprocessed/nmco_feats_and_labels.csv',
                       'data_key':'profile', 'label_key':'label', 'index_key':'id',
-                      'label_col':'cd8', 'exclude_features':['cd4', 'cd16', 'patient', 'timepoint', 'i80_i20']}
+                      'label_col':'cd8', 'exclude_features':['cd4', 'cd16', 'patient', 'timepoint', 'i80_i20'],
+                      'filter_dict':{'timepoint':[3]}
+                }
 
   model_config: {'model_config':{'type':'SimpleClassifier', 'n_output_nodes':2, 'input_dim': 89, 'hidden_dims':[64,32]},
                        'optimizer_config':{'type':'adam','lr':0.0001, 'weight_decay':0.000},

@@ -3,7 +3,7 @@ from typing import List
 
 import pandas as pd
 from sklearn.metrics import confusion_matrix, plot_roc_curve, auc
-from sklearn.model_selection import StratifiedKFold, GroupKFold
+from sklearn.model_selection import StratifiedKFold, GroupKFold, StratifiedGroupKFold
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -23,9 +23,10 @@ def read_in_protein_dataset(
         features["timepoint"] = os.path.split(subdir)[1].split("_")[1]
         qc_result_path = subdir + qc_result_file_path
         qc_results = pd.read_csv(qc_result_path, index_col=0)
-        features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
+        features.loc[set(list(features.index)).intersection(qc_results.index), "qc_pass"] = qc_results.loc[
             qc_results.index, "qc_pass"
         ]
+        features["data_dir"] = subdir
         if (
             filter_samples is None
             or np.unique(features.loc[:, "sample"])[0] in filter_samples
@@ -56,6 +57,7 @@ def read_in_marker_dataset(
         features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
             qc_results.index, "qc_pass"
         ]
+        features["data_dir"] = subdir
         marker_labels = pd.read_csv(subdir + marker_label_file_path, index_col=0,)
         features = features.merge(marker_labels, left_index=True, right_index=True)
         if (
@@ -92,6 +94,7 @@ def preprocess_data(
         "weighted_centroid-0",
         "weighted_centroid-1",
     ],
+    remove_constant_features = False
 ):
     filtered_data = data.loc[data["qc_pass"] == True]
     print(
@@ -99,7 +102,10 @@ def preprocess_data(
             len(data) - len(filtered_data), len(data), len(filtered_data),
         )
     )
-    data = filtered_data.loc[:, (filtered_data != filtered_data.iloc[0]).any()]
+    if remove_constant_features:
+        data = filtered_data.loc[:, (filtered_data != filtered_data.iloc[0]).any()]
+    else:
+        data=filtered_data
     data = data.dropna(axis=1)
     print(
         "Removed {} constant or features with missing values. Remaining: {}.".format(
@@ -124,7 +130,7 @@ def preprocess_data(
                 new_idc.append(idx)
                 idx_count[idx] = 1
             else:
-                new_idc.append(idx + "_{}".format(idx_count[idx]))
+                new_idc.append("{}_{}".format(idx, idx_count[idx]))
                 idx_count[idx] = idx_count[idx] + 1
         cleaned_data.index = np.array(new_idc).astype(str)
     return cleaned_data
@@ -177,7 +183,7 @@ def remove_correlated_features(data, threshold):
     return data.drop(to_drop, axis=1)
 
 
-def plot_feature_importance(importance, names, model_type):
+def plot_feature_importance(importance, names, model_type, figsize=[6,4], cmap="gray"):
     # Create arrays from feature importance and feature names
     feature_importance = np.array(importance)
     feature_names = np.array(names)
@@ -190,14 +196,14 @@ def plot_feature_importance(importance, names, model_type):
     fi_df.sort_values(by=["feature_importance"], ascending=False, inplace=True)
     fi_df = fi_df.head(20)
     # Define size of bar plot
-    plt.figure(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=figsize)
     # Plot Searborn bar chart
-    sns.barplot(x=fi_df["feature_importance"], y=fi_df["feature_names"], palette="gray")
+    ax = sns.barplot(x=fi_df["feature_importance"], y=fi_df["feature_names"], palette=cmap, ax=ax)
     # Add chart labels
-    plt.title(model_type + "FEATURE IMPORTANCE")
-    plt.xlabel("FEATURE IMPORTANCE")
-    plt.ylabel("FEATURE NAMES")
-    plt.show()
+    ax.set_title(model_type + "FEATURE IMPORTANCE")
+    ax.set_xlabel("FEATURE IMPORTANCE")
+    ax.set_ylabel("FEATURE NAMES")
+    return fig, ax
 
 
 def plot_roc_for_stratified_cv(
@@ -279,21 +285,39 @@ def plot_roc_for_stratified_cv(
     return fig, ax, classifier
 
 
-def compute_avg_conf_mtx(model, n_folds, features, labels):
-    skf = StratifiedKFold(n_folds)
+def compute_cv_conf_mtx(
+    model, n_folds, features, labels, groups=None,
+):
     features = np.array(features)
     labels = np.array(labels)
     n_classes = len(np.unique(labels))
 
     confusion_mtx = np.zeros([n_classes, n_classes])
-    for train_index, test_index in skf.split(features, labels):
-        X_train, X_test = features[train_index], features[test_index]
-        y_train, y_test = labels[train_index], labels[test_index]
-        model.fit(X_train, y_train)
-        confusion_mtx += confusion_matrix(
-            y_test, model.predict(X_test), normalize="true"
-        )
-    confusion_mtx = confusion_mtx / n_folds
-    return pd.DataFrame(
-        confusion_mtx, index=sorted(set(labels)), columns=sorted(set(labels))
-    )
+
+    if groups is not None:
+        skf = StratifiedGroupKFold(n_splits=n_folds)
+        for train_index, test_index in skf.split(features, labels, groups):
+            X_train, X_test = features[train_index], features[test_index]
+            y_train, y_test = labels[train_index], labels[test_index]
+            model.fit(X_train, y_train)
+            fold_confusion_matrix = confusion_matrix(
+                y_test,
+                model.predict(X_test),
+                normalize=None,
+                labels=model.classes_,
+            )
+            confusion_mtx += fold_confusion_matrix
+    else:
+        skf = StratifiedKFold(n_splits=n_folds)
+        for train_index, test_index in skf.split(features, labels):
+            X_train, X_test = features[train_index], features[test_index]
+            y_train, y_test = labels[train_index], labels[test_index]
+            model.fit(X_train, y_train)
+            fold_confusion_matrix = confusion_matrix(
+                y_test,
+                model.predict(X_test),
+                normalize=None,
+                labels=model.classes_,
+            )
+            confusion_mtx += fold_confusion_matrix
+    return pd.DataFrame(confusion_mtx, index=model.classes_, columns=model.classes_)
