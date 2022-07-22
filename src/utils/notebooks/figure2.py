@@ -33,8 +33,15 @@ def get_stratified_data(ctrl_data, cond_data, id_column="id", seed=1234):
 
     return sampled_data
 
+
 def plot_ctrl_cancer_markers_dist(
-    data, markers, marker_labels, quantiles=None, cut=2, plot_type="violin", palette=None,
+    data,
+    markers,
+    marker_labels,
+    quantiles=None,
+    cut=2,
+    plot_type="violin",
+    palette=None,
 ):
     for i in range(len(markers)):
         fig, ax = plot_marker_distribution(
@@ -43,14 +50,12 @@ def plot_ctrl_cancer_markers_dist(
             marker=markers[i],
             label_col="condition",
             order=["Control", "Cancer"],
-            box_pairs=[
-                ("Control", "Cancer"),
-            ],
+            box_pairs=[("Control", "Cancer"),],
             stat_annot="star",
             quantiles=quantiles,
             cut=cut,
             plot_type=plot_type,
-            palette=palette
+            palette=palette,
         )
         ax.set_xlabel("condition")
         ax.set_ylabel(marker_labels[i])

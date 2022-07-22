@@ -17,7 +17,8 @@ from src.utils.torch.exp import train_val_test_loop
 from src.utils.torch.general import get_device
 from src.utils.torch.model import (
     get_exp_configuration,
-    get_nuclei_image_transformations_dict, get_nuclei_padding_transformation_dict,
+    get_nuclei_image_transformations_dict,
+    get_nuclei_padding_transformation_dict,
 )
 
 
@@ -77,7 +78,9 @@ class BaseEmbeddingExperiment:
                     get_nuclei_image_transformations_dict(224)
                 )
             elif data_transform_pipeline == "padding_only":
-                self.data_transform_pipeline_dicts.append(get_nuclei_padding_transformation_dict())
+                self.data_transform_pipeline_dicts.append(
+                    get_nuclei_padding_transformation_dict()
+                )
             else:
                 raise NotImplementedError
 

@@ -29,6 +29,7 @@ def get_stratified_data(data, id_column="id", cond_column="cancer", seed=1234):
     res_data, res_cond_labels = sampler.fit_resample(res_data, cond_labels)
     return res_data
 
+
 def get_chrometric_data(data, proteins, exclude_dna_int=True):
     data = data._get_numeric_data()
     for protein in proteins:
@@ -38,6 +39,7 @@ def get_chrometric_data(data, proteins, exclude_dna_int=True):
         data = data[data.columns.drop(list(data.filter(regex="int")))]
         data = data.drop(columns=["i80_i20"])
     return data
+
 
 def get_random_images(
     data,
@@ -62,6 +64,7 @@ def get_random_images(
         images.append(image)
     return images
 
+
 def padding(array, height, width):
     """
     :param array: numpy array
@@ -83,6 +86,7 @@ def padding(array, height, width):
         array, pad_width=((center_y, pad_y), (center_x, pad_x)), mode="constant"
     )
 
+
 def plot_montage(
     images,
     cmap="viridis",
@@ -101,7 +105,7 @@ def plot_montage(
             mask = images[i].max(axis=0)[-1, :, :]
         else:
             image = images[i].max(axis=0)[:, :, 0]
-            mask = images[i].max(axis=0)[ :, :, -1]
+            mask = images[i].max(axis=0)[:, :, -1]
 
         if mask_nuclei:
             image = image * mask
@@ -112,6 +116,7 @@ def plot_montage(
         ax[i].set_aspect("equal")
     plt.subplots_adjust(wspace=0, hspace=0.05)
     return fig, ax
+
 
 def get_tsne_embs(data, scale_data=True, seed=1234):
     if scale_data:
@@ -132,6 +137,7 @@ def get_tsne_embs(data, scale_data=True, seed=1234):
     )
     return embs
 
+
 def get_cv_conf_mtx(
     estimator,
     features,
@@ -148,12 +154,17 @@ def get_cv_conf_mtx(
         )
 
     cv_conf_mtx = compute_cv_conf_mtx(
-        model=estimator, n_folds=n_folds, features=features, labels=labels, groups=groups,
+        model=estimator,
+        n_folds=n_folds,
+        features=features,
+        labels=labels,
+        groups=groups,
     )
 
     if order is not None:
         cv_conf_mtx = cv_conf_mtx.loc[order, order]
     return cv_conf_mtx
+
 
 def plot_feature_importance_for_estimator(
     estimator, features, labels, scale_features=True, cmap="gray", figsize=[6, 4]
@@ -173,6 +184,7 @@ def plot_feature_importance_for_estimator(
     )
     ax.set_title("")
     return fig, ax
+
 
 def find_markers(data, labels):
     results = []
@@ -207,6 +219,7 @@ def find_markers(data, labels):
     result["pval_adjust"] = fdrcorrection(np.array(result.loc[:, "pval"]))[1]
     return result.sort_values("pval_adjust")
 
+
 def plot_marker_distribution(
     data,
     marker,
@@ -221,8 +234,13 @@ def plot_marker_distribution(
     quantiles=None,
     cut=2,
     plot_type="violin",
+    test="t-test_ind",
+    ax=None,
+    fig=None,
+    split=None,
 ):
-    fig, ax = plt.subplots(figsize=figsize)
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
     if quantiles is not None:
         data = data.loc[
             (data.loc[:, marker] < np.quantile(data.loc[:, marker], q=quantiles[1]))
@@ -240,6 +258,7 @@ def plot_marker_distribution(
             palette=palette,
             width=0.8,
             cut=cut,
+            split=split,
         )
     elif plot_type == "bar":
         ax = sns.barplot(
@@ -250,7 +269,7 @@ def plot_marker_distribution(
             hue=hue,
             hue_order=hue_order,
             order=order,
-            palette=palette
+            palette=palette,
         )
     else:
         raise NotImplementedError
@@ -266,14 +285,30 @@ def plot_marker_distribution(
         hue_order=hue_order,
         plot=plot_type + "plot",
     )
-    annotator.configure(test="t-test_ind", text_format="star", loc="inside")
+    annotator.configure(
+        test=test,
+        text_format="star",
+        loc="inside",
+        comparisons_correction="Benjamini-Hochberg",
+    )
     annotator.apply_test()
     annotator.annotate()
 
     return fig, ax
 
+
 def plot_cancer_type_markers_dist(
-    data, markers, marker_labels, quantiles=None, cut=2, plot_type="violin", palette=None, figsize=[6,4]
+    data,
+    markers,
+    marker_labels,
+    quantiles=None,
+    cut=2,
+    plot_type="violin",
+    palette=None,
+    figsize=[4, 4],
+    hue=None,
+    hue_order=None,
+    test="t-test_ind",
 ):
     for i in range(len(markers)):
         fig, ax = plot_marker_distribution(
@@ -292,8 +327,47 @@ def plot_cancer_type_markers_dist(
             cut=cut,
             plot_type=plot_type,
             palette=palette,
+            hue=hue,
+            hue_order=hue_order,
+            test=test,
         )
         ax.set_xlabel("condition")
+        ax.set_ylabel(marker_labels[i])
+        plt.show()
+        plt.close()
+
+
+def plot_timepoint_markers_dist(
+    data,
+    markers,
+    marker_labels,
+    quantiles=None,
+    cut=2,
+    plot_type="violin",
+    palette=None,
+    figsize=[4, 4],
+    hue=None,
+    hue_order=None,
+    test="t-test_ind",
+):
+    for i in range(len(markers)):
+        fig, ax = plot_marker_distribution(
+            data,
+            figsize=figsize,
+            marker=markers[i],
+            label_col="timepoint",
+            order=["prior", "during", "end"],
+            box_pairs=[("prior", "during"), ("prior", "end"), ("during", "end"),],
+            stat_annot="star",
+            quantiles=quantiles,
+            cut=cut,
+            plot_type=plot_type,
+            palette=palette,
+            hue=hue,
+            hue_order=hue_order,
+            test=test,
+        )
+        ax.set_xlabel("Treatment timepoint")
         ax.set_ylabel(marker_labels[i])
         plt.show()
         plt.close()

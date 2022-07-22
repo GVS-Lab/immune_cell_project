@@ -23,9 +23,9 @@ def read_in_protein_dataset(
         features["timepoint"] = os.path.split(subdir)[1].split("_")[1]
         qc_result_path = subdir + qc_result_file_path
         qc_results = pd.read_csv(qc_result_path, index_col=0)
-        features.loc[set(list(features.index)).intersection(qc_results.index), "qc_pass"] = qc_results.loc[
-            qc_results.index, "qc_pass"
-        ]
+        features.loc[
+            set(list(features.index)).intersection(qc_results.index), "qc_pass"
+        ] = qc_results.loc[qc_results.index, "qc_pass"]
         features["data_dir"] = subdir
         if (
             filter_samples is None
@@ -53,10 +53,11 @@ def read_in_marker_dataset(
         features["sample"] = os.path.split(subdir)[1].split("_")[0].lower()
         features["timepoint"] = os.path.split(subdir)[1].split("_")[1]
         qc_result_path = subdir + qc_result_file_path
+
         qc_results = pd.read_csv(qc_result_path, index_col=0)
-        features.loc[qc_results.index, "qc_pass"] = qc_results.loc[
-            qc_results.index, "qc_pass"
-        ]
+        features.loc[
+            set(list(features.index)).intersection(qc_results.index), "qc_pass"
+        ] = qc_results.loc[qc_results.index, "qc_pass"]
         features["data_dir"] = subdir
         marker_labels = pd.read_csv(subdir + marker_label_file_path, index_col=0,)
         features = features.merge(marker_labels, left_index=True, right_index=True)
@@ -94,7 +95,7 @@ def preprocess_data(
         "weighted_centroid-0",
         "weighted_centroid-1",
     ],
-    remove_constant_features = False
+    remove_constant_features=False,
 ):
     filtered_data = data.loc[data["qc_pass"] == True]
     print(
@@ -105,7 +106,7 @@ def preprocess_data(
     if remove_constant_features:
         data = filtered_data.loc[:, (filtered_data != filtered_data.iloc[0]).any()]
     else:
-        data=filtered_data
+        data = filtered_data
     data = data.dropna(axis=1)
     print(
         "Removed {} constant or features with missing values. Remaining: {}.".format(
@@ -183,7 +184,7 @@ def remove_correlated_features(data, threshold):
     return data.drop(to_drop, axis=1)
 
 
-def plot_feature_importance(importance, names, model_type, figsize=[6,4], cmap="gray"):
+def plot_feature_importance(importance, names, model_type, figsize=[6, 4], cmap="gray"):
     # Create arrays from feature importance and feature names
     feature_importance = np.array(importance)
     feature_names = np.array(names)
@@ -198,7 +199,9 @@ def plot_feature_importance(importance, names, model_type, figsize=[6,4], cmap="
     # Define size of bar plot
     fig, ax = plt.subplots(figsize=figsize)
     # Plot Searborn bar chart
-    ax = sns.barplot(x=fi_df["feature_importance"], y=fi_df["feature_names"], palette=cmap, ax=ax)
+    ax = sns.barplot(
+        x=fi_df["feature_importance"], y=fi_df["feature_names"], palette=cmap, ax=ax
+    )
     # Add chart labels
     ax.set_title(model_type + "FEATURE IMPORTANCE")
     ax.set_xlabel("FEATURE IMPORTANCE")
@@ -301,10 +304,7 @@ def compute_cv_conf_mtx(
             y_train, y_test = labels[train_index], labels[test_index]
             model.fit(X_train, y_train)
             fold_confusion_matrix = confusion_matrix(
-                y_test,
-                model.predict(X_test),
-                normalize=None,
-                labels=model.classes_,
+                y_test, model.predict(X_test), normalize=None, labels=model.classes_,
             )
             confusion_mtx += fold_confusion_matrix
     else:
@@ -314,10 +314,7 @@ def compute_cv_conf_mtx(
             y_train, y_test = labels[train_index], labels[test_index]
             model.fit(X_train, y_train)
             fold_confusion_matrix = confusion_matrix(
-                y_test,
-                model.predict(X_test),
-                normalize=None,
-                labels=model.classes_,
+                y_test, model.predict(X_test), normalize=None, labels=model.classes_,
             )
             confusion_mtx += fold_confusion_matrix
     return pd.DataFrame(confusion_mtx, index=model.classes_, columns=model.classes_)

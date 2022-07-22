@@ -124,21 +124,25 @@ def get_nuclei_padding_transformation_dict():
         "train": transforms.Compose(
             [
                 CustomCenteredCrop(128),
-                #transforms.Resize(64),
+                # transforms.Resize(64),
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
                 transforms.ToTensor(),
             ]
         ),
         "val": transforms.Compose(
-            [CustomCenteredCrop(128),
-             #transforms.Resize(64),
-            transforms.ToTensor()]
+            [
+                CustomCenteredCrop(128),
+                # transforms.Resize(64),
+                transforms.ToTensor(),
+            ]
         ),
         "test": transforms.Compose(
-            [CustomCenteredCrop(128),
-             #transforms.Resize(64),
-            transforms.ToTensor()]
+            [
+                CustomCenteredCrop(128),
+                # transforms.Resize(64),
+                transforms.ToTensor(),
+            ]
         ),
     }
     return data_transforms

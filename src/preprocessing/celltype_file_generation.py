@@ -95,7 +95,9 @@ class DataFileGenerator(object):
             marker_label_df.loc[:, col] = marker_label_df.loc[:, col].map(
                 {0: "{}-".format(col), 1: "{}+".format(col)}
             )
-        file_locs = get_file_list(os.path.join(patient_tp_dir, self.image_dir_loc), absolute_path=True)
+        file_locs = get_file_list(
+            os.path.join(patient_tp_dir, self.image_dir_loc), absolute_path=True
+        )
         file_ids = get_file_list(
             os.path.join(patient_tp_dir, self.image_dir_loc),
             absolute_path=False,

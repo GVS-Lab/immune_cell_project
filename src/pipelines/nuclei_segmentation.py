@@ -379,8 +379,11 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         )
 
     def run_segmentation_pipeline_2d(self, segmentation_2d_params_dict: dict = None):
-        if "channels" in segmentation_2d_params_dict:
-            channels = [self.channels.index(c) for c in segmentation_2d_params_dict["channels"]]
+        if "normalize_channels" in segmentation_2d_params_dict:
+            channels = [
+                self.channels.index(c)
+                for c in segmentation_2d_params_dict["normalize_channels"]
+            ]
         else:
             channels = [self.channels.index("dna")]
         self.apply_channel_normalization(channels=channels)

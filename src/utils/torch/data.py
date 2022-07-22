@@ -8,7 +8,7 @@ def init_image_dataset(
     metadata_file: str,
     image_file_col: str = "image_file",
     label_col: str = "label",
-    filter_dict:dict=None,
+    filter_dict: dict = None,
     pseudo_rgb: bool = False,
 ) -> TorchImageDataset:
     logging.debug(
@@ -26,7 +26,10 @@ def init_image_dataset(
 
 
 def init_profile_dataset(
-    feature_label_file: str, label_col: str = "label", filter_dict:dict=None, exclude_features: List = None,
+    feature_label_file: str,
+    label_col: str = "label",
+    filter_dict: dict = None,
+    exclude_features: List = None,
 ):
     logging.debug("Load image data set from {}.".format(feature_label_file))
     profile_dataset = TorchProfileDataset(
