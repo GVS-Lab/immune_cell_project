@@ -1,0 +1,25 @@
+output_dir: '../../data/other/405DAPI_647CD8_488CD4_2_12_21/preprocessed/'
+module: src.pipelines.full_pipelines
+class: FullPreprocessingPipeline
+run_params:
+  input_dir: '../../data/other/405DAPI_647CD8_488CD4_2_12_21/raw/'
+  channels: [ 'dna', 'cd8', 'cd4' ]
+
+# expansion for the 2d segmentation should be at least 5 * max(protein_expansion) + 2 --> the factor 5 comes
+# from z-voxel size ~= 5* x-y_voxel size --> when dilating the nuclear boundary to capture the protein expression
+# we dilate protein_expansion-times in z and 5*protein_expansion in x-y direction. 2D segmentation expansion should cover
+# expanded nuclei which leads to the above equation
+
+pipeline:
+  - method: run_complete_pipeline
+    params:
+      segmentation_2d_params_dict: {'min_area': 800, 'max_area': 5000, 'gamma': 0.7, 'morphological_closing': False,
+                                     'filter_type': "median", 'binary_filter_type': 'otsu', 'expansion':12,}
+      segmentation_3d_params_dict: {'method': 'morph_snakes', 'min_size': 400, 'iterations': 300, 'lambda1': 1, 'lambda2': 2}
+      characterize_channels: [ 'cd8', 'cd4' ]
+      protein_expansions: [2,2]
+      channels: [ 'dna', 'cd8', 'cd4' ]
+
+#  - method: run_labeling_pipeline
+#    params:
+#      marker_channels: ['cd8', 'cd4']

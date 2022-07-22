@@ -4,11 +4,13 @@ import numpy as np
 from nmco.utils.run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
 import tifffile
 from tqdm import tqdm
-from src.utils.feature_extraction import (
+from src.utils.basic.feature_extraction import (
     compute_all_morphological_chromatin_features_3d,
-    compute_all_channel_features, expand_boundaries,
+    compute_all_channel_features,
+    expand_boundaries,
+    get_n_foci,
 )
-from src.utils.io import get_file_list
+from src.utils.basic.io import get_file_list
 import pandas as pd
 
 
@@ -39,8 +41,14 @@ class DnaFeatureExtractionPipeline2D(FeatureExtractionPipeline):
             nuclei_image_id = os.path.split(nuclei_image_loc)[1]
             nuclei_image_id = nuclei_image_id[: nuclei_image_id.index(".")]
             nuclei_features = run_nuclear_chromatin_feat_ext(
-                nuclei_image_loc, nuclei_mask_loc, "temp/", step_size_curvature=5, hc_threshold=1.5, gclm_lengths=[5,25,100],
-                normalize=True, prominance_curvature=0.1,
+                nuclei_image_loc,
+                nuclei_mask_loc,
+                "temp/",
+                step_size_curvature=5,
+                hc_threshold=1.5,
+                gclm_lengths=[5, 25, 100],
+                normalize=True,
+                prominance_curvature=0.1,
             )
             nuclei_ids = [
                 nuclei_image_id + "_{}".format(i) for i in range(len(nuclei_features))
@@ -146,6 +154,7 @@ class DnaFeatureExtractionPipeline3D(FeatureExtractionPipeline):
             )
             features = pd.DataFrame(features, index=[self.image_ids[i]])
             all_features.append(features)
+
         self.dna_features = pd.concat(all_features)
         self.dna_features.index = self.image_ids
 
@@ -180,7 +189,44 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         else:
             self.features = pd.concat(([self.features, self.dna_features]), axis=1)
 
-    def extract_channel_features(self, channel: str, expansion:int=0, z_project:bool=False):
+    def extract_foci_counts(
+        self,
+        channel: str,
+        z_project=False,
+        min_dist=3,
+        threshold_rel: float = None,
+        expansion=0,
+    ):
+        channel_id = self.channels.index(channel)
+        all_channel_foci = []
+
+        for i in tqdm(
+            range(len(self.raw_images)),
+            desc="Extract {} foci counts".format(channel.upper()),
+        ):
+            channel_image = self.raw_images[i][:, channel_id]
+            nucleus_mask = expand_boundaries(self.masks[i], expansion)
+            features = get_n_foci(
+                channel_image,
+                mask=nucleus_mask,
+                description=channel,
+                index=i,
+                z_project=z_project,
+                min_dist=min_dist,
+                threshold_rel=threshold_rel,
+            )
+            all_channel_foci.append(features)
+
+        channel_features = pd.concat(all_channel_foci)
+        channel_features.index = self.image_ids
+        if self.features is None:
+            self.features = channel_features
+        else:
+            self.features = pd.concat([self.features, channel_features], axis=1)
+
+    def extract_channel_features(
+        self, channel: str, expansion: int = 0, z_project: bool = False
+    ):
         channel_id = self.channels.index(channel)
         all_channel_features = []
         for i in tqdm(
@@ -189,7 +235,13 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         ):
             channel_image = self.raw_images[i][:, channel_id]
             nucleus_mask = expand_boundaries(self.masks[i], expansion)
-            features = compute_all_channel_features(channel_image, nucleus_mask=nucleus_mask, channel=channel, index=i, z_project=z_project)
+            features = compute_all_channel_features(
+                channel_image,
+                nucleus_mask=nucleus_mask,
+                channel=channel,
+                index=i,
+                z_project=z_project,
+            )
             all_channel_features.append(features)
         channel_features = pd.concat(all_channel_features)
         channel_features.index = self.image_ids
@@ -211,10 +263,10 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         characterize_channels: List = None,
         compute_rdp: bool = True,
         save_features: bool = True,
-        protein_expansions:List[int]=None
+        protein_expansions: List[int] = None,
     ):
         if protein_expansions is None:
-            protein_expansions = [0]*len(characterize_channels)
+            protein_expansions = [0] * len(characterize_channels)
         self.read_in_images()
         self.extract_dna_features(compute_rdp=compute_rdp)
         self.extract_channel_features(channel="dna")
@@ -222,7 +274,15 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
             characterize_channels = []
         for i in range(len(characterize_channels)):
             channel = characterize_channels[i]
-            self.extract_channel_features(channel=channel, expansion=protein_expansions[i], z_project=True)
-            self.extract_channel_features(channel=channel, expansion=protein_expansions[i], z_project=False)
+            self.extract_channel_features(
+                channel=channel, expansion=protein_expansions[i], z_project=True
+            )
+            self.extract_channel_features(
+                channel=channel, expansion=protein_expansions[i], z_project=False
+            )
+            if channel.lower() == "gh2ax":
+                self.extract_foci_counts(
+                    channel=channel, min_dist=3, threshold_rel=1, expansion=0
+                )
         if save_features:
             self.save_features()

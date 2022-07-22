@@ -1,0 +1,11 @@
+output_dir: '../../data/raj_aging_data/young_c_hp1_muT_combined/dna_features/'
+module: src.pipelines.feature_extraction
+class: DnaFeatureExtractionPipeline2D
+run_params:
+  raw_image_dir: '../../data/raj_aging_data/young_c_hp1_muT_combined/segmented/dapi_concomp_2d/dapi_projections_2d'
+  segmented_image_dir: '../../data/raj_aging_data/young_c_hp1_muT_combined/segmented/dapi_concomp_2d/labeled_segmentation_2d'
+
+
+pipeline:
+  - method: run_default_pipeline
+

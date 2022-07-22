@@ -1,0 +1,12 @@
+numpy~=1.20.1
+scikit-image~=0.18.1
+scipy~=1.6.0
+pandas~=1.2.3
+yaml~=0.2.5
+pyyaml~=5.4.1
+seaborn~=0.11.1
+scikit-learn~=0.24.1
+tifffile~=2021.2.26
+nmco~=0.1
+tqdm~=4.58.0
+joblib~=1.0.1

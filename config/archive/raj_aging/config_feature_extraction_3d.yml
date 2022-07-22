@@ -1,0 +1,15 @@
+output_dir: '../../data/raj_aging_data/young_c_hp1_muT_combined/dna_features/'
+module: src.pipelines.feature_extraction
+class: MultiChannelFeatureExtractionPipeline3D
+run_params:
+  input_dir: '../../data/raj_aging_data/young_c_hp1_muT_combined/segmented/dapi_concomp_2d/nuclear_crops_3d'
+  channels: ['dapi', 'hp1', 'actin', 'tubilin']
+
+
+pipeline:
+  - method: run_default_pipeline
+    params:
+      segmentation_params_dict: {'method':'threshold_otsu', 'min_size': 400,  'median_smoothing': False, 'gamma': 1.0}
+      characterize_channels: ['hp1', 'actin', 'tubilin']
+      compute_rdp: False
+

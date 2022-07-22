@@ -11,10 +11,9 @@ import scipy.ndimage as ndi
 import tifffile
 from tqdm import tqdm
 
-from src.utils.feature_extraction import expand_boundaries
-from src.utils.io import get_file_list, save_figure_as_png
-from src.utils.segmentation import get_nuclear_mask_in_3d, pad_image
-from src.utils.visualization import plot_colored_3d_segmentation
+from src.utils.basic.io import get_file_list, save_figure_as_png
+from src.utils.basic.segmentation import get_nuclear_mask_in_3d, pad_image
+from src.utils.basic.visualization import plot_colored_3d_segmentation
 
 
 class SegmentationPipeline(object):
@@ -40,16 +39,18 @@ class SegmentationPipeline(object):
         if self.normalize_channels:
             self.apply_channel_normalization()
 
-    def apply_channel_normalization(self):
-        normalized_raw_image = np.zeros_like(self.raw_image)
-        for c in range(self.raw_image.shape[1]):
+    def apply_channel_normalization(self, channels=None):
+        if channels is None:
+            channels = []
+        normalized_raw_image = copy.deepcopy(self.raw_image)
+        for c in channels:
             channel_img = self.raw_image[:, c, :, :].astype(np.float32)
             normalized_raw_image[:, c, :, :] = np.array(
                 (
                     (channel_img - channel_img.min()) / channel_img.max()
                     - channel_img.min()
                 )
-                * 2 ** 12,
+                * ((2 ** 16) - 1),
                 dtype=np.uint16,
             )
         self.raw_image = normalized_raw_image
@@ -149,7 +150,7 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
                 self.labeled_projection[self.labeled_projection == region.label] = 0
         self.labeled_projection = measure.label(self.labeled_projection > 0)
 
-    def get_nuclear_crops(self, expansion:int=1):
+    def get_nuclear_crops(self, expansion: int = 1):
         self.nuclear_crops = []
         self.nuclear_crop_labels = []
         regions = measure.regionprops(
@@ -158,15 +159,15 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         for region in regions:
 
             xmin, ymin, xmax, ymax = region.bbox
-            xmin = max(0, xmin-expansion)
-            ymin = max(0, ymin-expansion)
-            xmax = min(xmax+expansion, self.labeled_projection.shape[0])
-            ymax = min(ymax+expansion, self.labeled_projection.shape[1])
+            xmin = max(0, xmin - expansion)
+            ymin = max(0, ymin - expansion)
+            xmax = min(xmax + expansion, self.labeled_projection.shape[0])
+            ymax = min(ymax + expansion, self.labeled_projection.shape[1])
             crop = np.array(self.raw_image[:, :, xmin:xmax, ymin:ymax])
 
             # Set all values outside of z_projected nuclear mask to 0
             convex_hull = region.convex_image.astype(int)
-            padded_convex_hull = np.zeros_like(crop[0,0])
+            padded_convex_hull = np.zeros_like(crop[0, 0])
             padded_convex_hull = pad_image(convex_hull, padded_convex_hull.shape)
             for i in range(expansion):
                 padded_convex_hull = ndi.binary_dilation(padded_convex_hull)
@@ -194,8 +195,12 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
 
         for i in range(len(self.nuclear_crops)):
             nucleus_3d_file = nuclei_3d_file_name + "_{}".format(i) + ".tif"
-            self.nuclei_ids.append(nuclei_file_name[:nuclei_file_name.index(".")] + "_{}".format(i))
-            nucleus_2d_file = nuclei_2d_file_name + "_{}".format(self.nuclear_crop_labels[i]) + ".tif"
+            self.nuclei_ids.append(
+                nuclei_file_name[: nuclei_file_name.index(".")] + "_{}".format(i)
+            )
+            nucleus_2d_file = (
+                nuclei_2d_file_name + "_{}".format(self.nuclear_crop_labels[i]) + ".tif"
+            )
             nucleus = self.nuclear_crops[i]
             nucleus_max_z = np.array(nucleus).max(axis=0)
             # ImageJ format requires TZCYXS
@@ -222,8 +227,8 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         n_jobs: int = 10,
         lambda1: float = 1,
         lambda2: float = 2,
-        zmin:int=5,
-        zmax:int=20,
+        zmin: int = 5,
+        zmax: int = 20,
         **kwargs
     ):
         dna_channel_id = self.channels.index("dna")
@@ -374,6 +379,14 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         )
 
     def run_segmentation_pipeline_2d(self, segmentation_2d_params_dict: dict = None):
+        if "normalize_channels" in segmentation_2d_params_dict:
+            channels = [
+                self.channels.index(c)
+                for c in segmentation_2d_params_dict["normalize_channels"]
+            ]
+        else:
+            channels = [self.channels.index("dna")]
+        self.apply_channel_normalization(channels=channels)
         self.apply_image_filter(filter_type=segmentation_2d_params_dict["filter_type"])
         self.apply_lumination_correction(gamma=segmentation_2d_params_dict["gamma"])
         self.apply_image_filter(
@@ -419,9 +432,15 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
     def save_qc_results(self):
         file_path = os.path.join(self.output_dir, "qc_results.csv")
         if os.path.exists(file_path):
-            self.qc_results = pd.read_csv(file_path, index_col=0).append(pd.DataFrame(self.qc_results, index=self.nuclei_ids, columns=["qc_pass"]))
+            self.qc_results = pd.read_csv(file_path, index_col=0).append(
+                pd.DataFrame(
+                    self.qc_results, index=self.nuclei_ids, columns=["qc_pass"]
+                )
+            )
         else:
-            self.qc_results = pd.DataFrame(self.qc_results, index=self.nuclei_ids, columns=["qc_pass"])
+            self.qc_results = pd.DataFrame(
+                self.qc_results, index=self.nuclei_ids, columns=["qc_pass"]
+            )
         self.qc_results.to_csv(file_path)
 
     def run_segmentation_pipeline_3d(self, segmentation_3d_params_dict: dict = None):
