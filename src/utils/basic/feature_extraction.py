@@ -1,17 +1,23 @@
+import copy
+
 import numpy as np
 import pandas as pd
-from scipy.stats.mstats_basic import mquantiles
+from matplotlib import pyplot as plt
+from skimage.color import label2rgb
+from skimage.feature import peak_local_max
+from skimage.filters import gaussian
 from skimage.measure import (
     regionprops_table,
     marching_cubes,
     mesh_surface_area,
     regionprops,
 )
-from skimage import morphology, feature
+from skimage import morphology, feature, measure
 import scipy.ndimage as ndi
 from scipy.interpolate import interp1d
 from scipy.stats.mstats import kurtosis, skew
 import cv2
+from skimage.segmentation import watershed, find_boundaries, mark_boundaries
 
 
 def get_nuclear_surface_area(nucleus_mask: np.ndarray):
@@ -213,3 +219,70 @@ def get_n_foci(
         {"{}_foci_count".format(description): len(peaks)}, index=[index]
     )
     return result
+
+
+def get_2D_foci_features(
+    image,
+    mask,
+    image_index,
+    alpha=2.5,
+    min_dist=1,
+    min_size=4,
+    sigma=0.5,
+):
+    img = image.max(axis=0)
+    nuc_mask = copy.deepcopy(mask).max(axis=0).astype(bool)
+
+    # Reduce noise via Gaussian filtering
+    filtered = gaussian(img, sigma)
+    filtered = img.copy()
+
+    # Obtain masked images
+    img = np.ma.array(img, mask=~nuc_mask)
+    filtered = np.ma.array(filtered, mask=~nuc_mask)
+
+    # Min-Max scale the images
+    img = np.clip((img - img.min()) / (img.max() - img.min()) * 255, 0, 255).astype(
+        np.uint8
+    )
+    filtered = np.clip(
+        (filtered - filtered.min()) / (filtered.max() - filtered.min()) * 255, 0, 255
+    ).astype(np.uint8)
+
+    # Get foci mask via thresholding
+    threshold = filtered.mean() + alpha * filtered.std()
+    foci_mask = filtered > threshold
+    foci_mask = np.ma.filled(foci_mask, fill_value=False)
+    foci_mask = morphology.remove_small_objects(foci_mask, min_size=min_size)
+
+    # Identify local intensity maxima
+    coords = peak_local_max(filtered, min_distance=min_dist)
+    peak_mask = np.zeros(filtered.shape, dtype=bool)
+    peak_mask[tuple(coords.T)] = True
+    markers, _ = ndi.label(peak_mask)
+
+    # Watershed segment the images using the local maxima
+    labels = watershed(-filtered, markers, mask=foci_mask)
+    labels = morphology.remove_small_objects(labels, min_size=min_size)
+    labels = measure.label(labels)
+
+    # Characterize foci
+    foci_feats = regionprops_table(
+        label_image=labels,
+        intensity_image=np.ma.filled(img, fill_value=0),
+        properties=["label", "area", "equivalent_diameter"],
+    )
+    # if max(foci_feats["area"]) > 50:
+    #     tmp = image.max(axis=0)
+    #     tmp = gaussian(tmp, sigma)
+    #     tmp = np.ma.array(tmp, mask=~nuc_mask)
+    #     tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+    #     tmp = np.clip(tmp * 255, 0, 255).astype(np.uint8)
+    #     tmp = label2rgb(labels, image=tmp, bg_label=0)
+    #     fig, ax = plt.subplots(figsize=[6,4])
+    #     ax.imshow(tmp)
+    #     ax.set_title("{}: {}".format(image_index, max(foci_feats["area"])))
+    #     plt.show()
+    #     plt.close()
+    foci_feats["image_index"] = image_index
+    return pd.DataFrame(foci_feats)

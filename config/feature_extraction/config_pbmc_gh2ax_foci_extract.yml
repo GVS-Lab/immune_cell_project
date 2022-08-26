@@ -1,0 +1,21 @@
+output_dir: '../../data/glioma/proteins/timepoint_1/P15_1_PBMCs_Dapi_gH2AX_LaminA_C_CD3_12_1_22_2X_16bit_2X/preprocessed'
+module: src.pipelines.full_pipelines
+class: FullPreprocessingPipeline
+run_params:
+  input_dir: ''
+  channels: ['dna', 'gh2ax', 'lamin', 'cd3']
+
+# expansion for the 2d segmentation should be at least 5 * max(protein_expansion) + 2 --> the factor 5 comes
+# from z-voxel size ~= 5* x-y_voxel size --> when dilating the nuclear boundary to capture the protein expression
+# we dilate protein_expansion-times in z and 5*protein_expansion in x-y direction. 2D segmentation expansion should cover
+# expanded nuclei which leads to the above equation
+
+pipeline:
+  - method: run_gh2ax_foci_pipeline
+    params:
+      dna_projections_dir: "../../data/glioma/proteins/timepoint_1/P15_1_PBMCs_Dapi_gH2AX_LaminA_C_CD3_12_1_22_2X_16bit_2X/preprocessed/full_pipeline/segmentation/dna_projections_2d"
+      labeled_projections_dir: "../../data/glioma/proteins/timepoint_1/P15_1_PBMCs_Dapi_gH2AX_LaminA_C_CD3_12_1_22_2X_16bit_2X/preprocessed/full_pipeline/segmentation/labeled_segmentation_2d"
+      nuclei_image_dir: "../../data/glioma/proteins/timepoint_1/P15_1_PBMCs_Dapi_gH2AX_LaminA_C_CD3_12_1_22_2X_16bit_2X/preprocessed/full_pipeline/segmentation/nuclei_images"
+      channels: ['dna', 'gh2ax', 'lamin', 'cd3']
+      characterize_channels: ['gh2ax', 'lamin', 'cd3']
+      protein_expansions: [0,0,2]

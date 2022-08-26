@@ -1,8 +1,8 @@
-output_dir: '../../data/comparison/P22a_1_PBMCs_Dapi_gH2AX_LaminA_C_11_10_21_2X_16bit_2X/preprocessed/'
+output_dir: '/media/paysan_d/wd_datastore/chromark/raw_data/pancancer/P18_1_PBMCs_Dapi_gH2AX_Lamin_2_09_21_2X_16bit_poly/preprocessed/'
 module: src.pipelines.full_pipelines
 class: FullPreprocessingPipeline
 run_params:
-  input_dir: '../../data/comparison/P22a_1_PBMCs_Dapi_gH2AX_LaminA_C_11_10_21_2X_16bit_2X/raw/'
+  input_dir: '/media/paysan_d/wd_datastore/chromark/raw_data/pancancer/P18_1_PBMCs_Dapi_gH2AX_Lamin_2_09_21_2X_16bit_poly/raw/'
   channels: [ 'dna', 'gh2ax', 'lamin' ]
 
 # expansion for the 2d segmentation should be at least 5 * max(protein_expansion) + 2 --> the factor 5 comes
@@ -14,7 +14,7 @@ pipeline:
   - method: run_complete_pipeline
     params:
       segmentation_2d_params_dict: {'min_area': 800, 'max_area': 5000, 'gamma': 0.7, 'morphological_closing': False,
-                                     'filter_type': "median", 'binary_filter_type': 'otsu', 'expansion':12,}
+                                     'filter_type': "median", 'binary_filter_type': 'otsu', 'expansion':12, 'normalize_channels':["dna", "gh2ax"]}
       segmentation_3d_params_dict: {'method': 'morph_snakes', 'min_size': 400, 'iterations': 300, 'lambda1': 1, 'lambda2': 2}
       characterize_channels: [ 'gh2ax', 'lamin']
       protein_expansions: [0,0]
