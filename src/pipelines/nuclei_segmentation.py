@@ -1,6 +1,7 @@
 import logging
 import os
 import copy
+import shutil
 from typing import List
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ from matplotlib import pyplot as plt
 from skimage import filters, morphology, segmentation, measure, exposure, color, io
 import scipy.ndimage as ndi
 import tifffile
+from skimage.io import imread
 from tqdm import tqdm
 
 from src.utils.basic.io import get_file_list, save_figure_as_png
@@ -254,6 +256,15 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             self.nuclei_masks.append(item[0])
             self.qc_results.append(item[1])
 
+    def read_in_external_nuclear_masks(self, mask_dir: str):
+        self.nuclei_masks = []
+        for i in tqdm(
+            range(len(self.nuclear_crops)), desc="Read in external 3D nuclei images"
+        ):
+            loc = os.path.join(mask_dir, self.nuclei_ids[i] + ".tif")
+            mask = imread(loc)[:, :, :, -1]
+            self.nuclei_masks.append(mask)
+
     def add_nuclei_mask_channel(self):
         self.channels.append("nuclear_mask")
         for i in tqdm(range(len(self.nuclei_masks)), desc="Add nuclear mask channel"):
@@ -385,7 +396,8 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
                 for c in segmentation_2d_params_dict["normalize_channels"]
             ]
         else:
-            channels = [self.channels.index("dna")]
+            # channels = [self.channels.index("dna"), self.ch]
+            channels = [0, 1]
         self.apply_channel_normalization(channels=channels)
         self.apply_image_filter(filter_type=segmentation_2d_params_dict["filter_type"])
         self.apply_lumination_correction(gamma=segmentation_2d_params_dict["gamma"])
@@ -453,6 +465,14 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
         self.save_nuclei_images()
         self.plot_colored_nuclei_masks()
 
+    def use_external_segmentation_3d(self, mask_dir: str, qc_file_path: str):
+        qc_out_file_path = os.path.join(self.output_dir, "qc_results.csv")
+        shutil.copy(qc_file_path, qc_out_file_path)
+        self.read_in_external_nuclear_masks(mask_dir)
+        self.add_nuclei_mask_channel()
+        self.save_nuclei_images()
+        self.plot_colored_nuclei_masks()
+
     def run_default_pipeline(
         self,
         segmentation_2d_params_dict: dict,
@@ -465,3 +485,14 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             self.run_segmentation_pipeline_2d(segmentation_2d_params_dict)
             if segment_3d:
                 self.run_segmentation_pipeline_3d(segmentation_3d_params_dict)
+
+    def run_pipeline_with_external_3d_masks(
+        self, segmentation_2d_params_dict: dict, mask_3d_dir, qc_file_path
+    ):
+        for i in tqdm(range(len(self.file_list)), desc="Overall segmentation process"):
+            if not self.read_in_image(i):
+                continue
+            self.run_segmentation_pipeline_2d(segmentation_2d_params_dict)
+            self.use_external_segmentation_3d(
+                mask_dir=mask_3d_dir, qc_file_path=qc_file_path
+            )

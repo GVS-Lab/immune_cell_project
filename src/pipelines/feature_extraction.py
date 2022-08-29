@@ -9,6 +9,7 @@ from src.utils.basic.feature_extraction import (
     compute_all_channel_features,
     expand_boundaries,
     get_n_foci,
+    get_2D_foci_features,
 )
 from src.utils.basic.io import get_file_list
 import pandas as pd
@@ -189,6 +190,38 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         else:
             self.features = pd.concat(([self.features, self.dna_features]), axis=1)
 
+    def extract_foci_characteristics(
+        self,
+        channel,
+        alpha=2.5,
+        min_dist=1,
+        min_size=4,
+        sigma=0.5,
+        expansion=0,
+    ):
+        channel_id = self.channels.index(channel)
+        all_foci_feats = []
+        for i in tqdm(
+            range(len(self.raw_images)),
+            desc="Extract {} foci counts".format(channel.upper()),
+        ):
+            channel_image = self.raw_images[i][:, channel_id]
+            nucleus_mask = expand_boundaries(self.masks[i], expansion)
+            image_id = self.image_ids[i]
+            foci_feats = get_2D_foci_features(
+                image=channel_image,
+                mask=nucleus_mask,
+                image_index=image_id,
+                min_size=min_size,
+                min_dist=min_dist,
+                sigma=sigma,
+                alpha=alpha,
+            )
+            all_foci_feats.append(foci_feats)
+        all_foci_feats = pd.concat(all_foci_feats)
+        all_foci_feats.index = list(range(len(all_foci_feats)))
+        return all_foci_feats
+
     def extract_foci_counts(
         self,
         channel: str,
@@ -250,13 +283,15 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         else:
             self.features = pd.concat([self.features, channel_features], axis=1)
 
-    def save_features(self, file_name: str = None):
+    def save_features(self, features=None, file_name: str = None):
+        if features is None:
+            features = self.features
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
         if file_name is None:
             file_name = "nuclei_features_3d.csv"
-        self.features.to_csv(os.path.join(self.output_dir, file_name))
+        features.to_csv(os.path.join(self.output_dir, file_name))
 
     def run_default_pipeline(
         self,
@@ -281,8 +316,46 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
                 channel=channel, expansion=protein_expansions[i], z_project=False
             )
             if channel.lower() == "gh2ax":
-                self.extract_foci_counts(
-                    channel=channel, min_dist=3, threshold_rel=1, expansion=0
+                # self.extract_foci_counts(
+                #     channel=channel, min_dist=3, threshold_rel=1, expansion=0
+                # )
+                foci_characteristics = self.extract_foci_characteristics(
+                    channel=channel,
+                    min_dist=1,
+                    min_size=4,
+                    alpha=2.5,
+                    sigma=0.5,
                 )
+                self.save_features(
+                    features=foci_characteristics,
+                    file_name="{}_foci_feats.csv".format(channel),
+                )
+
         if save_features:
-            self.save_features()
+            self.save_features(features=self.features)
+
+
+    def run_gh2ax_foci_pipeline(
+        self,
+        characterize_channels: List = None,
+        protein_expansions: List[int] = None,
+    ):
+        if protein_expansions is None:
+            protein_expansions = [0] * len(characterize_channels)
+        self.read_in_images()
+        if characterize_channels is None:
+            characterize_channels = []
+        for i in range(len(characterize_channels)):
+            channel = characterize_channels[i]
+            if channel.lower() == "gh2ax":
+                foci_characteristics = self.extract_foci_characteristics(
+                    channel=channel,
+                    min_dist=1,
+                    min_size=4,
+                    alpha=2.5,
+                    sigma=0.5,
+                )
+                self.save_features(
+                    features=foci_characteristics,
+                    file_name="{}_foci_feats.csv".format(channel),
+                )
