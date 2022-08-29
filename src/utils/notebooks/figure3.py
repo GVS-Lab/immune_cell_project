@@ -21,15 +21,16 @@ def get_stratified_data(data, id_column="id", cond_column="cancer", seed=1234):
     sampler = RandomUnderSampler(random_state=seed)
 
     # Subsample such that each patient is represented by the same number of nuclei
-    idc = np.array(list(data.index)).reshape(-1, 1)
+    idc = np.array(list(range(len(data)))).reshape(-1, 1)
     id_labels = np.array(data.loc[:, id_column])
     res_idc, res_id_labels = sampler.fit_resample(idc, id_labels)
-    res_data = data.loc[res_idc.ravel()]
+    res_data = data.iloc[res_idc.ravel()]
 
     # Subsample such that we have an equal number of nuclei per condition
     cond_labels = np.array(res_data.loc[:, cond_column])
+    res_idc = np.array(list(range(len(res_data)))).reshape(-1, 1)
     res_idc, res_cond_labels = sampler.fit_resample(res_idc, cond_labels)
-    res_data = data.loc[res_idc.ravel()]
+    res_data = res_data.iloc[res_idc.ravel()]
     return res_data
 
 
