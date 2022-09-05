@@ -1,9 +1,9 @@
 from typing import Tuple
 
 import numpy as np
+import scipy.ndimage as ndi
 from numpy import ndarray
 from skimage import filters, segmentation, morphology, exposure
-import scipy.ndimage as ndi
 
 
 def get_nuclear_mask_in_3d(

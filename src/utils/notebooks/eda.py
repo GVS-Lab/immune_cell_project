@@ -1,13 +1,13 @@
 import os
 from typing import List
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import seaborn as sns
 from sklearn.metrics import confusion_matrix, plot_roc_curve, auc
 from sklearn.model_selection import StratifiedKFold, GroupKFold, StratifiedGroupKFold
 from statsmodels.stats.outliers_influence import variance_inflation_factor
-import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
 from tqdm import tqdm
 
 
@@ -198,7 +198,7 @@ def remove_correlated_features(data, threshold):
     return data.drop(to_drop, axis=1)
 
 
-def plot_feature_importance(importance, names, model_type, figsize=[6, 4], cmap="gray"):
+def plot_feature_importance(importance, names, model_type, figsize=[6, 4], cmap=["gray"], n_features=10, feature_color_dict=None):
     # Create arrays from feature importance and feature names
     feature_importance = np.array(importance)
     feature_names = np.array(names)
@@ -209,13 +209,16 @@ def plot_feature_importance(importance, names, model_type, figsize=[6, 4], cmap=
 
     # Sort the DataFrame in order decreasing feature importance
     fi_df.sort_values(by=["feature_importance"], ascending=False, inplace=True)
-    fi_df = fi_df.head(20)
+    fi_df = fi_df.head(n_features)
     # Define size of bar plot
     fig, ax = plt.subplots(figsize=figsize)
     # Plot Searborn bar chart
     ax = sns.barplot(
         x=fi_df["feature_importance"], y=fi_df["feature_names"], palette=cmap, ax=ax
     )
+    if feature_color_dict is not None:
+        for yticklabel in ax.get_yticklabels():
+            yticklabel.set_color(feature_color_dict[yticklabel.get_text()])
     # Add chart labels
     ax.set_title(model_type + "FEATURE IMPORTANCE")
     ax.set_xlabel("FEATURE IMPORTANCE")

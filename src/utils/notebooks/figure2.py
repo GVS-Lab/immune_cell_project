@@ -1,8 +1,12 @@
-from src.utils.notebooks.figure3 import plot_marker_distribution
-import numpy as np
-from imblearn.under_sampling import RandomUnderSampler
 from collections import Counter
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from imblearn.under_sampling import RandomUnderSampler
+from sklearn.preprocessing import MinMaxScaler
+
+from src.utils.notebooks.figure3 import plot_marker_distribution
 
 
 def get_stratified_data(ctrl_data, cond_data, id_column="id", seed=1234):
@@ -51,7 +55,6 @@ def plot_ctrl_cancer_markers_dist(
             label_col="condition",
             order=["Control", "Cancer"],
             box_pairs=[("Control", "Cancer"),],
-            stat_annot="star",
             quantiles=quantiles,
             cut=cut,
             plot_type=plot_type,
@@ -61,3 +64,44 @@ def plot_ctrl_cancer_markers_dist(
         ax.set_ylabel(marker_labels[i])
         plt.show()
         plt.close()
+
+
+def plot_joint_markers_ctrl_cancer(
+    data,
+    markers,
+    marker_labels,
+    label_col="condition",
+    cut=0,
+    palette=None,
+    plot_type="violin",
+    figsize=[6, 3],
+):
+    all_markers = []
+    boxpairs = []
+    labels = np.array(data.loc[:, label_col])
+    for marker in markers:
+        marker_data = np.array(data.loc[:, marker])
+        marker_data = MinMaxScaler().fit_transform(marker_data.reshape(-1, 1))
+        marker_data = pd.DataFrame(marker_data, columns=["norm_value"])
+        marker_data["condition"] = labels
+        marker_data["marker"] = marker
+        all_markers.append(marker_data)
+    all_markers = pd.concat(all_markers)
+    all_markers.marker = all_markers.marker.map(dict(zip(markers, marker_labels)))
+    for marker in np.unique(all_markers.marker):
+        boxpairs.append(((marker, "Control"), (marker, "Cancer")))
+
+    fig, ax = plot_marker_distribution(
+        data=all_markers,
+        marker="norm_value",
+        label_col="marker",
+        hue="condition",
+        order=marker_labels,
+        hue_order=["Control", "Cancer"],
+        palette=palette,
+        plot_type=plot_type,
+        box_pairs=boxpairs,
+        figsize=figsize,
+        cut=cut,
+    )
+    return fig, ax

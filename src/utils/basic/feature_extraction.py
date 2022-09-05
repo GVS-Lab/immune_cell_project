@@ -2,8 +2,10 @@ import copy
 
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-from skimage.color import label2rgb
+import scipy.ndimage as ndi
+from scipy.interpolate import interp1d
+from scipy.stats.mstats import kurtosis, skew
+from skimage import morphology, feature, measure
 from skimage.feature import peak_local_max
 from skimage.filters import gaussian
 from skimage.measure import (
@@ -12,12 +14,7 @@ from skimage.measure import (
     mesh_surface_area,
     regionprops,
 )
-from skimage import morphology, feature, measure
-import scipy.ndimage as ndi
-from scipy.interpolate import interp1d
-from scipy.stats.mstats import kurtosis, skew
-import cv2
-from skimage.segmentation import watershed, find_boundaries, mark_boundaries
+from skimage.segmentation import watershed
 
 
 def get_nuclear_surface_area(nucleus_mask: np.ndarray):

@@ -1,15 +1,16 @@
+import copy
 import logging
 import os
-import copy
 import shutil
 from typing import List
+
 import numpy as np
 import pandas as pd
+import scipy.ndimage as ndi
+import tifffile
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
 from skimage import filters, morphology, segmentation, measure, exposure, color, io
-import scipy.ndimage as ndi
-import tifffile
 from skimage.io import imread
 from tqdm import tqdm
 

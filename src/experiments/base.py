@@ -1,9 +1,9 @@
 import logging
+from random import seed
 from typing import List
 
 import numpy as np
 import torch
-from random import seed
 
 from src.utils.basic.visualization import plot_train_val_hist
 from src.utils.torch.general import get_device

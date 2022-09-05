@@ -1,14 +1,14 @@
-import numpy as np
-import pandas as pd
-from imblearn.under_sampling import RandomUnderSampler
-import matplotlib.pyplot as plt
-import seaborn as sns
 import os
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from imblearn.under_sampling import RandomUnderSampler
 from scipy.stats import ttest_ind
 from skimage.io import imread
 from sklearn.manifold import TSNE
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from statannotations.Annotator import Annotator
 from statsmodels.stats.multitest import fdrcorrection
 from tqdm.notebook import tqdm
@@ -34,14 +34,16 @@ def get_stratified_data(data, id_column="id", cond_column="cancer", seed=1234):
     return res_data
 
 
-def get_chrometric_data(data, proteins, exclude_dna_int=True):
+def get_chrometric_data(data, proteins, exclude_dna_int=True, exclude_features=None):
     data = data._get_numeric_data()
     for protein in proteins:
         data = data[data.columns.drop(list(data.filter(regex=protein)))]
     if exclude_dna_int:
-        data = data[data.columns.drop(list(data.filter(regex="dna")))]
-        data = data[data.columns.drop(list(data.filter(regex="int")))]
-        data = data.drop(columns=["i80_i20"])
+        # data = data[data.columns.drop(list(data.filter(regex="dna")))]
+        # data = data[data.columns.drop(list(data.filter(regex="int")))]
+        data = data[data.columns.drop(list(data.filter(regex="absolute_dna_intensity")))]
+        if exclude_features is not None:
+            data = data.drop(columns=exclude_features)
     return data
 
 
@@ -171,7 +173,7 @@ def get_cv_conf_mtx(
 
 
 def plot_feature_importance_for_estimator(
-    estimator, features, labels, scale_features=True, cmap="gray", figsize=[6, 4]
+    estimator, features, labels, scale_features=True, cmap=["gray"], figsize=[6, 4], n_features =10, feature_color_dict = None
 ):
     if scale_features:
         sc = StandardScaler()
@@ -185,6 +187,8 @@ def plot_feature_importance_for_estimator(
         "RFC",
         figsize=figsize,
         cmap=cmap,
+        n_features=n_features,
+        feature_color_dict=feature_color_dict
     )
     ax.set_title("")
     return fig, ax
@@ -230,7 +234,6 @@ def plot_marker_distribution(
     label_col,
     box_pairs,
     figsize=[6, 4],
-    stat_annot="full",
     hue=None,
     order=None,
     hue_order=None,
@@ -238,7 +241,7 @@ def plot_marker_distribution(
     quantiles=None,
     cut=2,
     plot_type="violin",
-    test="t-test_ind",
+    test="t-test_welch",
     ax=None,
     fig=None,
     split=None,
@@ -326,7 +329,6 @@ def plot_cancer_type_markers_dist(
                 ("Glioma", "Meningioma"),
                 ("Head & Neck", "Meningioma"),
             ],
-            stat_annot="star",
             quantiles=quantiles,
             cut=cut,
             plot_type=plot_type,
@@ -362,7 +364,6 @@ def plot_timepoint_markers_dist(
             label_col="timepoint",
             order=["prior", "during", "end"],
             box_pairs=[("prior", "during"), ("prior", "end"), ("during", "end"),],
-            stat_annot="star",
             quantiles=quantiles,
             cut=cut,
             plot_type=plot_type,
@@ -375,3 +376,46 @@ def plot_timepoint_markers_dist(
         ax.set_ylabel(marker_labels[i])
         plt.show()
         plt.close()
+
+
+def plot_joint_markers_cancer_types(
+    data,
+    markers,
+    marker_labels,
+    label_col="condition",
+    cut=0,
+    palette=None,
+    plot_type="violin",
+    figsize=[6,3]
+):
+    all_markers = []
+    boxpairs = []
+    labels = np.array(data.loc[:, label_col])
+    for marker in markers:
+        marker_data = np.array(data.loc[:, marker])
+        marker_data = MinMaxScaler().fit_transform(marker_data.reshape(-1, 1))
+        marker_data = pd.DataFrame(marker_data, columns=["norm_value"])
+        marker_data["condition"] = labels
+        marker_data["marker"] = marker
+        all_markers.append(marker_data)
+    all_markers = pd.concat(all_markers)
+    all_markers.marker = all_markers.marker.map(dict(zip(markers, marker_labels)))
+    for marker in np.unique(all_markers.marker):
+        boxpairs.append(((marker, "Meningioma"), (marker, "Glioma")))
+        boxpairs.append(((marker, "Glioma"), (marker, "Head & Neck")))
+        boxpairs.append(((marker, "Meningioma"), (marker, "Head & Neck")))
+
+    fig, ax = plot_marker_distribution(
+        data=all_markers,
+        marker="norm_value",
+        label_col="marker",
+        hue="condition",
+        order=marker_labels,
+        hue_order=["Meningioma", "Glioma", "Head & Neck"],
+        palette=palette,
+        plot_type=plot_type,
+        box_pairs=boxpairs,
+        figsize=figsize,
+        cut=cut
+    )
+    return fig, ax
