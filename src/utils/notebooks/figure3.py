@@ -41,7 +41,10 @@ def get_chrometric_data(data, proteins, exclude_dna_int=True, exclude_features=N
     if exclude_dna_int:
         # data = data[data.columns.drop(list(data.filter(regex="dna")))]
         # data = data[data.columns.drop(list(data.filter(regex="int")))]
-        data = data[data.columns.drop(list(data.filter(regex="absolute_dna_intensity")))]
+        data = data[
+            data.columns.drop(list(data.filter(regex="absolute_dna_intensity")))
+        ]
+        data = data.drop(columns=["nuclear_mean_int", "nuclear_std_int"])
         if exclude_features is not None:
             data = data.drop(columns=exclude_features)
     return data
@@ -173,7 +176,14 @@ def get_cv_conf_mtx(
 
 
 def plot_feature_importance_for_estimator(
-    estimator, features, labels, scale_features=True, cmap=["gray"], figsize=[6, 4], n_features =10, feature_color_dict = None
+    estimator,
+    features,
+    labels,
+    scale_features=True,
+    cmap=["gray"],
+    figsize=[6, 4],
+    n_features=10,
+    feature_color_dict=None,
 ):
     if scale_features:
         sc = StandardScaler()
@@ -188,7 +198,7 @@ def plot_feature_importance_for_estimator(
         figsize=figsize,
         cmap=cmap,
         n_features=n_features,
-        feature_color_dict=feature_color_dict
+        feature_color_dict=feature_color_dict,
     )
     ax.set_title("")
     return fig, ax
@@ -386,7 +396,7 @@ def plot_joint_markers_cancer_types(
     cut=0,
     palette=None,
     plot_type="violin",
-    figsize=[6,3]
+    figsize=[6, 3],
 ):
     all_markers = []
     boxpairs = []
@@ -416,6 +426,6 @@ def plot_joint_markers_cancer_types(
         plot_type=plot_type,
         box_pairs=boxpairs,
         figsize=figsize,
-        cut=cut
+        cut=cut,
     )
     return fig, ax

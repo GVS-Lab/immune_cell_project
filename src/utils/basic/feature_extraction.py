@@ -219,19 +219,12 @@ def get_n_foci(
 
 
 def get_2D_foci_features(
-    image,
-    mask,
-    image_index,
-    alpha=2.5,
-    min_dist=1,
-    min_size=4,
-    sigma=0.5,
+    image, mask, image_index, alpha=2.5, min_dist=1, min_size=4,
 ):
     img = image.max(axis=0)
     nuc_mask = copy.deepcopy(mask).max(axis=0).astype(bool)
 
     # Reduce noise via Gaussian filtering
-    filtered = gaussian(img, sigma)
     filtered = img.copy()
 
     # Obtain masked images

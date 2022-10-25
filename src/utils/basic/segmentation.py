@@ -34,7 +34,7 @@ def get_nuclear_mask_in_3d(
         for i in range(len(nucleus_mask)):
             nucleus_mask[i] = ndi.binary_fill_holes(nucleus_mask[i])
             nucleus_mask[i] = morphology.remove_small_objects(
-                nucleus_mask[i], min_size=64
+                nucleus_mask[i], min_size=min_size
             )
 
     elif method == "morph_snakes":
@@ -55,8 +55,7 @@ def get_nuclear_mask_in_3d(
         )
         n_zlayers = np.sum([np.any(zlayer) for zlayer in nucleus_mask])
         if (
-            n_zlayers >= zmin
-            and n_zlayers <= zmax
+            zmin <= n_zlayers <= zmax
             and np.any(nucleus_mask[0]) == np.any(nucleus_mask[-1]) == False
         ):
             qc_pass = True

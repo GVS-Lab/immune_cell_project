@@ -12,7 +12,12 @@ from tqdm import tqdm
 
 
 def read_in_protein_dataset(
-    data_dir, feature_file_path, qc_result_file_path, gh2ax_foci_result_file_path = None, gh2ax_foci_result_image_index_col="image_index", filter_samples: List[str] = None,
+    data_dir,
+    feature_file_path,
+    qc_result_file_path,
+    gh2ax_foci_result_file_path=None,
+    gh2ax_foci_result_image_index_col="image_index",
+    filter_samples: List[str] = None,
 ):
     all_features = []
     subdirs = [f.path for f in os.scandir(data_dir) if f.is_dir()]
@@ -29,17 +34,49 @@ def read_in_protein_dataset(
         features["data_dir"] = subdir
         if gh2ax_foci_result_file_path is not None:
             gh2ax_foci_path = subdir + gh2ax_foci_result_file_path
-            gh2ax_results = pd.read_csv(gh2ax_foci_path, index_col =0)
-            grouped_gh2ax_results = gh2ax_results.groupby(gh2ax_foci_result_image_index_col)
+            gh2ax_results = pd.read_csv(gh2ax_foci_path, index_col=0)
+            grouped_gh2ax_results = gh2ax_results.groupby(
+                gh2ax_foci_result_image_index_col
+            )
             count_gh2ax_results = grouped_gh2ax_results.count()
             sum_gh2ax_results = grouped_gh2ax_results.sum()
             avg_gh2ax_results = grouped_gh2ax_results.mean()
             features["gh2ax_foci_count"] = 0
             features["gh2ax_sum_foci_area"] = 0
             features["gh2ax_avg_foci_area"] = 0
-            features.loc[set(list(count_gh2ax_results.index)).intersection(list(features.index)), "gh2ax_foci_count"] = np.array(count_gh2ax_results.loc[set(list(count_gh2ax_results.index)).intersection(list(features.index)), "label"])
-            features.loc[set(list(sum_gh2ax_results.index)).intersection(list(features.index)), "gh2ax_sum_foci_area"] =  np.array(sum_gh2ax_results.loc[set(list(count_gh2ax_results.index)).intersection(list(features.index)), "area"])
-            features.loc[set(list(avg_gh2ax_results.index)).intersection(list(features.index)), "gh2ax_avg_foci_area"] = np.array(avg_gh2ax_results.loc[set(list(count_gh2ax_results.index)).intersection(list(features.index)), "area"])
+            features.loc[
+                set(list(count_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_foci_count",
+            ] = np.array(
+                count_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "label",
+                ]
+            )
+            features.loc[
+                set(list(sum_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_sum_foci_area",
+            ] = np.array(
+                sum_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "area",
+                ]
+            )
+            features.loc[
+                set(list(avg_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_avg_foci_area",
+            ] = np.array(
+                avg_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "area",
+                ]
+            )
 
         if (
             filter_samples is None
@@ -58,6 +95,8 @@ def read_in_marker_dataset(
     qc_result_file_path,
     marker_label_file_path,
     filter_samples: List[str] = None,
+    gh2ax_foci_result_file_path=None,
+    gh2ax_foci_result_image_index_col="image_index",
 ):
     all_features = []
     subdirs = [f.path for f in os.scandir(data_dir) if f.is_dir()]
@@ -73,6 +112,53 @@ def read_in_marker_dataset(
             set(list(features.index)).intersection(qc_results.index), "qc_pass"
         ] = qc_results.loc[qc_results.index, "qc_pass"]
         features["data_dir"] = subdir
+
+        if gh2ax_foci_result_file_path is not None:
+            gh2ax_foci_path = subdir + gh2ax_foci_result_file_path
+            gh2ax_results = pd.read_csv(gh2ax_foci_path, index_col=0)
+            grouped_gh2ax_results = gh2ax_results.groupby(
+                gh2ax_foci_result_image_index_col
+            )
+            count_gh2ax_results = grouped_gh2ax_results.count()
+            sum_gh2ax_results = grouped_gh2ax_results.sum()
+            avg_gh2ax_results = grouped_gh2ax_results.mean()
+            features["gh2ax_foci_count"] = 0
+            features["gh2ax_sum_foci_area"] = 0
+            features["gh2ax_avg_foci_area"] = 0
+            features.loc[
+                set(list(count_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_foci_count",
+            ] = np.array(
+                count_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "label",
+                ]
+            )
+            features.loc[
+                set(list(sum_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_sum_foci_area",
+            ] = np.array(
+                sum_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "area",
+                ]
+            )
+            features.loc[
+                set(list(avg_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_avg_foci_area",
+            ] = np.array(
+                avg_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "area",
+                ]
+            )
+
         marker_labels = pd.read_csv(subdir + marker_label_file_path, index_col=0,)
         features = features.merge(marker_labels, left_index=True, right_index=True)
         if (
@@ -198,7 +284,15 @@ def remove_correlated_features(data, threshold):
     return data.drop(to_drop, axis=1)
 
 
-def plot_feature_importance(importance, names, model_type, figsize=[6, 4], cmap=["gray"], n_features=10, feature_color_dict=None):
+def plot_feature_importance(
+    importance,
+    names,
+    model_type,
+    figsize=[6, 4],
+    cmap=["gray"],
+    n_features=10,
+    feature_color_dict=None,
+):
     # Create arrays from feature importance and feature names
     feature_importance = np.array(importance)
     feature_names = np.array(names)
