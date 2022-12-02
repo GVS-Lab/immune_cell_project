@@ -7,7 +7,6 @@ from scipy.interpolate import interp1d
 from scipy.stats.mstats import kurtosis, skew
 from skimage import morphology, feature, measure
 from skimage.feature import peak_local_max
-from skimage.filters import gaussian
 from skimage.measure import (
     regionprops_table,
     marching_cubes,

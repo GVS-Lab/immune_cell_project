@@ -1,5 +1,7 @@
 import os
 
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -155,6 +157,7 @@ def get_cv_conf_mtx(
     scale_features=True,
     n_folds=10,
     order=None,
+    balance_train=False,
 ):
     if scale_features:
         sc = StandardScaler()
@@ -168,6 +171,7 @@ def get_cv_conf_mtx(
         features=features,
         labels=labels,
         groups=groups,
+        balance_train=balance_train,
     )
 
     if order is not None:
@@ -184,6 +188,7 @@ def plot_feature_importance_for_estimator(
     figsize=[6, 4],
     n_features=10,
     feature_color_dict=None,
+    labelsize=6,
 ):
     if scale_features:
         sc = StandardScaler()
@@ -199,6 +204,7 @@ def plot_feature_importance_for_estimator(
         cmap=cmap,
         n_features=n_features,
         feature_color_dict=feature_color_dict,
+        labelsize=labelsize,
     )
     ax.set_title("")
     return fig, ax
@@ -276,7 +282,27 @@ def plot_marker_distribution(
             width=0.8,
             cut=cut,
             split=split,
+            inner="box",
+            # saturation=0.4,
+            linewidth=1,
         )
+        # sns.boxplot(
+        #     x=label_col,
+        #     y=marker,
+        #     data=data,
+        #     hue=hue,
+        #     palette=palette,
+        #     # palette=["lightgrey"],
+        #     width=0.08,
+        #     fliersize=0.0,
+        #     linewidth=0.6,
+        #     dodge=False,
+        #     order=order,
+        #     hue_order=hue_order,
+        #     boxprops={"zorder": 2},
+        #     ax=ax,
+        #     showcaps=False,
+        # )
     elif plot_type == "bar":
         ax = sns.barplot(
             data=data,
@@ -428,4 +454,187 @@ def plot_joint_markers_cancer_types(
         figsize=figsize,
         cut=cut,
     )
+    return fig, ax
+
+
+def plot_lopo_cv_results_by_class(
+    data,
+    classes,
+    x="majority_class",
+    y="score",
+    hue="condition",
+    figsize=[6, 4],
+    test="Mann-Whitney",
+    pval_text_format="star",
+    alpha=0.5,
+):
+    fig, ax = plt.subplots(figsize=figsize)
+    ax = sns.stripplot(
+        data=data,
+        x=x,
+        y=y,
+        hue=hue,
+        ax=ax,
+        dodge=True,
+        jitter=True,
+        linewidth=1,
+        edgecolor="gray",
+        palette="Set3",
+        alpha=alpha,
+        order=classes,
+    )
+
+    ax = sns.boxplot(
+        data=data,
+        x=x,
+        y=y,
+        hue=hue,
+        ax=ax,
+        dodge=True,
+        fliersize=0,
+        palette="Set3",
+        order=classes,
+    )
+    handles, labels = ax.get_legend_handles_labels()
+    l = plt.legend(
+        handles[0:2],
+        labels[0:2],
+        bbox_to_anchor=(0.5, 1.1),
+        loc="upper center",
+        borderaxespad=0.0,
+        ncol=2,
+        frameon=False,
+    )
+    box_pairs = []
+    for class_label in classes:
+        box_pairs.append(((class_label, "Observed"), (class_label, "Permuted")))
+
+    annotator = Annotator(
+        ax, box_pairs, data=data, x=x, y=y, hue=hue, order=classes, plot="boxplot",
+    )
+    annotator.configure(
+        test=test,
+        text_format=pval_text_format,
+        loc="inside",
+        comparisons_correction="Benjamini-Hochberg",
+    )
+    annotator.apply_test()
+    annotator.annotate()
+    return fig, ax
+
+
+def plot_lopo_cv_results(
+    data,
+    x="condition",
+    hue="avg_true_class_pred_prob",
+    y="score",
+    figsize=[6, 4],
+    test="Mann-Whitney",
+    pval_text_format="star",
+    alpha=0.5,
+    draw_cbar=True,
+    cbar_label="",
+):
+    fig, ax = plt.subplots(figsize=figsize)
+    ax = sns.stripplot(
+        data=data,
+        x=x,
+        y=y,
+        hue=hue,
+        ax=ax,
+        jitter=True,
+        linewidth=1,
+        edgecolor="gray",
+        alpha=alpha,
+        palette="inferno",
+    )
+    ax.get_legend().remove()
+
+    ax = sns.boxplot(
+        data=data, x=x, y=y, ax=ax, dodge=True, fliersize=0, palette="Set3"
+    )
+    box_pairs = [("Observed", "Permuted")]
+
+    annotator = Annotator(ax, box_pairs, data=data, x=x, y=y, plot="boxplot",)
+    annotator.configure(
+        test=test,
+        text_format=pval_text_format,
+        loc="inside",
+        comparisons_correction="Benjamini-Hochberg",
+    )
+    annotator.apply_test()
+    annotator.annotate()
+
+    if draw_cbar:
+        normalize = mcolors.TwoSlopeNorm(vcenter=0.5, vmin=0, vmax=1)
+        colormap = cm.inferno
+
+        [plt.plot(color=colormap(normalize(x))) for x in data[hue]]
+
+        scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
+        scalarmappaple.set_array(data[hue])
+        plt.colorbar(scalarmappaple, label=cbar_label)
+    return fig, ax
+
+
+def plot_lopo_cv_results_timepoints(
+    data,
+    x="tp",
+    hue="majority_class",
+    y="score",
+    order=None,
+    figsize=[6, 4],
+    test="Mann-Whitney",
+    pval_text_format="star",
+    alpha=0.5,
+    class_palette=None,
+    box_palette=None,
+):
+    fig, ax = plt.subplots(figsize=figsize)
+    ax = sns.stripplot(
+        data=data,
+        x=x,
+        y=y,
+        hue=hue,
+        ax=ax,
+        jitter=True,
+        linewidth=1,
+        edgecolor="gray",
+        alpha=alpha,
+        palette=class_palette,
+        order=order,
+    )
+    ax.get_legend().remove()
+
+    ax = sns.boxplot(
+        data=data,
+        x=x,
+        y=y,
+        ax=ax,
+        order=order,
+        dodge=True,
+        fliersize=0,
+        palette=box_palette,
+    )
+    box_pairs = [
+        ("prior", "during"),
+        ("during", "end"),
+        ("prior", "end"),
+        ("prior", "permutation"),
+        ("during", "permutation"),
+        ("end", "permutation"),
+    ]
+
+    annotator = Annotator(
+        ax, box_pairs, data=data, x=x, y=y, order=order, plot="boxplot",
+    )
+    annotator.configure(
+        test=test,
+        text_format=pval_text_format,
+        loc="inside",
+        comparisons_correction="Benjamini-Hochberg",
+    )
+    annotator.apply_test()
+    annotator.annotate()
+
     return fig, ax
