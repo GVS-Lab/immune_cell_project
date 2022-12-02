@@ -1,0 +1,235 @@
+,feature,long_name,description,category,dimensions,filter
+0,label,label_id,Object ID in the segmented image,n/a,2,TRUE
+1,min_calliper,min_caliper_distance,Minimal caliper distance,morphology,2,FALSE
+2,max_calliper,max_caliper_distance,Maximal caliper distance,morphology,2,FALSE
+3,smallest_largest_calliper,min_to_max_caliper_distance_ratio,Ratio of the minimal and maximal caliper distances,morphology,2,FALSE
+4,min_radius,min_radial_distance,Minimal distance of the centroid to the boundary,morphology,2,FALSE
+5,max_radius,max_radial_distance,Maximal distance of the centroid to the boundary,morphology,2,FALSE
+6,med_radius,median_radial_distance,Median distance of the centroid to the boundary,morphology,2,FALSE
+7,avg_radius,mean_radial_distance,Mean distance of the centroid to the boundary,morphology,2,FALSE
+8,mode_radius,mode_radial_distance,Mode of the radial distances,morphology,2,FALSE
+9,d25_radius,p25_radial_distance,25%-tile of the radial distances,morphology,2,FALSE
+10,d75_radius,p75_radial_distance,75%-tile of the radial distances,morphology,2,FALSE
+11,std_radius,std_radial_distance,Standard deviation of the radial distances,morphology,2,FALSE
+12,feret_max,max_feret_diameter,Maximum Feret diameter,morphology,2,FALSE
+13,centroid-0,centroid_y,y coordinate of the centroid,n/a,2,TRUE
+14,centroid-1,centroid_x,x coordinate of the centroid,n/a,2,TRUE
+15,area,area,Area,morphology,2,FALSE
+16,perimeter,perimeter,Perimeter,morphology,2,FALSE
+17,extent,extent,Ratio of the nuclear area of the nucleus and the bounding box in 2D,morphology,2,FALSE
+18,bbox_area,bbox_area,Area of the bounding box,morphology,2,FALSE
+19,convex_area,area_convex_hull,Area of the convex hull,morphology,2,FALSE
+20,equivalent_diameter,equivalent_diameter,Diameter of a circle with equal area,morphology,2,FALSE
+21,major_axis_length,major_axis_length,Length of the major axis of an ellipsoid of equal area,morphology,2,FALSE
+22,minor_axis_length,minor_axis_length,Length of the minor axis of an ellipsoid of equal area,morphology,2,FALSE
+23,eccentricity,eccentricity,Eccentricity of an ellipsoid with an equal second-order moment,morphology,2,FALSE
+24,orientation,orientation,Angle between the y-axis and the major axis,morphology,2,FALSE
+25,concavity,concavity,Normalized difference of the area of the convex hull and the actual area,morphology,2,FALSE
+26,solidity,solidity,Area divided by the area of the convex hull,morphology,2,FALSE
+27,a_r,aspect_ratio,Ratio of the minor to the major axis length,morphology,2,FALSE
+28,shape_factor,shape_factor,Shape factor that is the square of the perimeter divided by 4 times pi times the area,morphology,2,FALSE
+29,area_bbarea,area_bbarea,Ratio of the area to the bounding box area,morphology,2,FALSE
+30,avg_curvature,mean_curvature,Average of the curvature of the boundary,boundary,2,FALSE
+31,std_curvature,std_curvature,Standard deviation of the curvature of the boundary,boundary,2,FALSE
+32,npolarity_changes,num_polarity_changes,Number of the polarity changes of the boundary,boundary,2,FALSE
+33,max_posi_curv,max_pos_curvature,Maximal positive curvature of the boundary,boundary,2,FALSE
+34,avg_posi_curv,mean_pos_curvature,Average positive curvature of the boundary,boundary,2,FALSE
+35,med_posi_curv,median_pos_curvature,Median positive curvature of the boundary,boundary,2,FALSE
+36,std_posi_curv,std_pos_curvature,Standard deviation of the positive curvature of the boundary,boundary,2,FALSE
+37,sum_posi_curv,sum_pos_curvature,Sum of the positive curvature of the boundary,boundary,2,FALSE
+38,len_posi_curv,length_pos_curvature,Length of the positive curvature of the boundary,boundary,2,FALSE
+39,max_neg_curv,max_neg_curvature,Maximal negative curvature of the boundary,boundary,2,FALSE
+40,avg_neg_curv,mean_neg_curvature,Average negative curvature of the boundary,boundary,2,FALSE
+41,med_neg_curv,median_neg_curvature,Median of the negative curvature of the boundary,boundary,2,FALSE
+42,std_neg_curv,std_neg_curvature,Standard deviation of the negative curvature of the boundary,boundary,2,FALSE
+43,sum_neg_curv,sum_neg_curvature,Sum of the negative curvature of the boundary,boundary,2,FALSE
+44,len_neg_curv,length_neg_curvature,Length of the negative curvature of the boundary,boundary,2,FALSE
+45,num_prominant_pos_curv,num_prominant_pos_curvature,Number of prominent peaks of the positive curvature distribution of the boundary,boundary,2,FALSE
+46,prominance_prominant_pos_curv,mean_prominant_pos_curvature,Average of the prominance of the prominent peaks of the positive curvature distribution of the boundary,boundary,2,FALSE
+47,width_prominant_pos_curv,width_prominant_pos_curvature,Average width of the prominent peaks of the positive curvature distribution of the boundary,boundary,2,FALSE
+48,prominant_pos_curv,prominant_pos_curvature,Average of the local positive curvature around the prominent peaks,boundary,2,FALSE
+49,num_prominant_neg_curv,num_prominant_neg_curvature,Number of prominent peaks of the negative curvature distribution of the boundary,boundary,2,FALSE
+50,prominance_prominant_neg_curv,mean_prominant_neg_curvature,Average of the prominance of the prominent peaks of the negative curvature distribution of the boundary,boundary,2,FALSE
+51,width_prominant_neg_curv,width_prominant_neg_curvature,Average width of the prominent peaks of the negative curvature distribution of the boundary,boundary,2,FALSE
+52,prominant_neg_curv,prominant_neg_curvature,Average of the local negative curvature around the prominent peaks,boundary,2,FALSE
+53,frac_peri_w_posi_curvature,perimeter_to_pos_curvature,Ratio of the length of the boundary with positive curvature to the total perimeter,boundary,2,FALSE
+54,frac_peri_w_neg_curvature,perimeter_to_neg_curvature,Ratio of the length of the boundary with negative curvature to the total perimeter,boundary,2,FALSE
+55,frac_peri_w_polarity_changes,perimeter_to_num_polarity_changes,Number of polarity changes of the local curvature of the boundary normalized by the perimeter length,boundary,2,FALSE
+56,int_min,min_absolute_dna_intensity,Minimal intensity,intensity,2,TRUE
+57,int_d25,p25_absolute_dna_intensity,25%-tile of the intensity distribution,intensity,2,TRUE
+58,int_median,median_absolute_dna_intensity,Median intensity,intensity,2,TRUE
+59,int_d75,p75_absolute_dna_intensity,75%-tile of the intensity distribution,intensity,2,TRUE
+60,int_max,max_absolute_dna_intensity,Maximal intensity,intensity,2,TRUE
+61,int_mean,mean_absolute_dna_intensity,Average intensity,intensity,2,TRUE
+62,int_mode,mode_absolute_dna_intensity,Mode of the intensity distribution,intensity,2,TRUE
+63,int_sd,std_absolute_dna_intensity,Standard deviation of the intensity distribution,intensity,2,TRUE
+64,kurtosis,kurtosis_absolute_dna_intensity_distribution,Kurtosis of the intensity distribution,intensity,2,TRUE
+65,skewness,skewness_absolute_dna_intensity_distribution,Skewness of the intensity distribution,intensity,2,TRUE
+66,entropy,entropy_dna_intensity_distribution,Entropy of the intensity distribution,intensity,2,TRUE
+67,i80_i20,p80_to_p20_absolute_dna_intensity_ratio,Ratio of the 80%-to-20%-tile of the intensity distribution,chromatin condensation,2,TRUE
+68,nhigh_nlow,dna_p80_area_to_p20_area_ratio,Ratio of the area of where the intensity is above the 80%-tile respectively below the 20%-tile of the intensity distribution,chromatin condensation,2,FALSE
+69,hc_area_ec_area,hetero_to_euchromatin_area_ratio,Ratio of the area where the intensity is greater the average intensity + a multiple of the standard deviation of the intensity (default =1) as a proxy of the heterochromatin-to-euchromatin content,chromatin condensation,2,FALSE
+70,hc_area_nuc_area,hetero_to_area_ratio,Area of the heterochromatin content (see hc_area_ec_area) normalized by the area,chromatin condensation,2,FALSE
+71,hc_content_ec_content,hetero_to_euchromatin_content_ratio,Ratio of the summed intensity in the heterochromatin respectively euchromatin regions,chromatin condensation,2,FALSE
+72,hc_content_dna_content,heterochromatin_to_dna_content_ratio,Ratio of the summed intensity in the heterochromatin regions normalized by the total area,chromatin condensation,2,FALSE
+73,contrast_5,glcm_contrast_5px,Contrast of the GLCM matrix for a lag of 5 pixel,texture,2,FALSE
+74,contrast_25,glcm_contrast_25px,Contrast of the GLCM matrix for a lag of 25 pixels,texture,2,FALSE
+75,contrast_100,glcm_contrast_100px,Contrast of the GLCM matrix for a lag of 100 pixels,texture,2,FALSE
+76,dissimilarity_5,glcm_dissimilarity_5px,Dissimilarity of the GLCM matrix for a lag of 5 pixel,texture,2,FALSE
+77,dissimilarity_25,glcm_dissimilarity_25px,Dissimilarity of the GLCM matrix for a lag of 25 pixels,texture,2,FALSE
+78,dissimilarity_100,glcm_dissimilarity_100px,Dissimilarity of the GLCM matrix for a lag of 100 pixels,texture,2,FALSE
+79,homogeneity_5,glcm_homogeneity_5px,Homogeneity of the GLCM matrix for a lag of 5 pixel,texture,2,FALSE
+80,homogeneity_25,glcm_homogeneity_25px,Homogeneity of the GLCM matrix for a lag of 25 pixels,texture,2,FALSE
+81,gomogeneity_100,glcm_homogeneity_100px,Homogeneity of the GLCM matrix for a lag of 100 pixels,texture,2,FALSE
+82,asm_5,glcm_asm_5px,Angular second moment of the GLCM matrix for a lag of 5 pixel,texture,2,FALSE
+83,asm_25,glcm_asm_25px,Angular second moment of the GLCM matrix for a lag of 25 pixels,texture,2,FALSE
+84,asm_100,glcm_asm_100px,Angular second moment of the GLCM matrix for a lag of 100 pixels,texture,2,FALSE
+85,energy_5,glcm_energy_5px,Energy of the GLCM matrix for a lag of 5 pixel,texture,2,FALSE
+86,energy_25,glcm_energy_25px,Energy of the GLCM matrix for a lag of 25 pixels,texture,2,FALSE
+87,energy_100,glcm_energy_100px,Energy of the GLCM matrix for a lag of 100 pixels,texture,2,FALSE
+88,correlation_5,glcm_correlation_5px,Correlation of the GLCM matrix for a lag of 5 pixel,texture,2,FALSE
+89,correlation_25,glcm_correlation_25px,Correlation of the GLCM matrix for a lag of 25 pixels,texture,2,FALSE
+90,correlation_100,glcm_correlation_100px,Correlation of the GLCM matrix for a lag of 100 pixels,texture,2,FALSE
+91,weighted_centroid-0,weighted_centroid_y,Y-coordinate of the weighted centroid,n/a,2,FALSE
+92,weighted_centroid-1,weighted_centroid_x,X-coordinate of the weighted centroid,n/a,2,FALSE
+93,weighted_moments-0-0,weighted_moments_0_0,Weighted spatial moment for p=0 and q=0,moments,2,FALSE
+94,weighted_moments-0-1,weighted_moments_0_1,Weighted spatial moment for p=0 and q=1,moments,2,FALSE
+95,weighted_moments-0-2,weighted_moments_0_2,Weighted spatial moment for p=0 and q=2,moments,2,FALSE
+96,weighted_moments-0-3,weighted_moments_0_3,Weighted spatial moment for p=0 and q=3,moments,2,FALSE
+97,weighted_moments-1-0,weighted_moments_1_0,Weighted spatial moment for p=1 and q=0,moments,2,FALSE
+98,weighted_moments-1-1,weighted_moments_1_1,Weighted spatial moment for p=1 and q=1,moments,2,FALSE
+99,weighted_moments-1-2,weighted_moments_1_2,Weighted spatial moment for p=1 and q=2,moments,2,FALSE
+100,weighted_moments-1-3,weighted_moments_1_3,Weighted spatial moment for p=1 and q=3,moments,2,FALSE
+101,weighted_moments-2-0,weighted_moments_2_0,Weighted spatial moment for p=2 and q=0,moments,2,FALSE
+102,weighted_moments-2-1,weighted_moments_2_1,Weighted spatial moment for p=2 and q=1,moments,2,FALSE
+103,weighted_moments-2-2,weighted_moments_2_2,Weighted spatial moment for p=2 and q=2,moments,2,FALSE
+104,weighted_moments-2-3,weighted_moments_2_3,Weighted spatial moment for p=2 and q=3,moments,2,FALSE
+105,weighted_moments-3-0,weighted_moments_3_0,Weighted spatial moment for p=3 and q=0,moments,2,FALSE
+106,weighted_moments-3-1,weighted_moments_3_1,Weighted spatial moment for p=3 and q=1,moments,2,FALSE
+107,weighted_moments-3-2,weighted_moments_3_2,Weighted spatial moment for p=3 and q=2,moments,2,FALSE
+108,weighted_moments-3-3,weighted_moments_3_3,Weighted spatial moment for p=3 and q=3,moments,2,FALSE
+109,weighted_moments_normalized-0-0,weighted_moments_normalized_0_0,Weighted normalized spatial moment for p=0 and q=0,moments,2,FALSE
+110,weighted_moments_normalized-0-1,weighted_moments_normalized_0_1,Weighted normalized spatial moment for p=0 and q=1,moments,2,FALSE
+111,weighted_moments_normalized-0-2,weighted_moments_normalized_0_2,Weighted normalized spatial moment for p=0 and q=2,moments,2,FALSE
+112,weighted_moments_normalized-0-3,weighted_moments_normalized_0_3,Weighted normalized spatial moment for p=0 and q=3,moments,2,FALSE
+113,weighted_moments_normalized-1-0,weighted_moments_normalized_1_0,Weighted normalized spatial moment for p=1 and q=0,moments,2,FALSE
+114,weighted_moments_normalized-1-1,weighted_moments_normalized_1_1,Weighted normalized spatial moment for p=1 and q=1,moments,2,FALSE
+115,weighted_moments_normalized_1-2,weighted_moments_normalized_1_2,Weighted normalized spatial moment for p=1 and q=2,moments,2,FALSE
+116,weighted_moments_normalized-1-3,weighted_moments_normalized_1_3,Weighted normalized spatial moment for p=1 and q=3,moments,2,FALSE
+117,weighted_moments_normalized-2-0,weighted_moments_normalized_2_0,Weighted normalized spatial moment for p=2 and q=0,moments,2,FALSE
+118,weighted_moments_normalized-2-1,weighted_moments_normalized_2_1,Weighted normalized spatial moment for p=2 and q=1,moments,2,FALSE
+119,weighted_moments_normalized-2-2,weighted_moments_normalized_2_2,Weighted normalized spatial moment for p=2 and q=2,moments,2,FALSE
+120,weighted_moments_normalized-2-3,weighted_moments_normalized_2_3,Weighted normalized spatial moment for p=2 and q=3,moments,2,FALSE
+121,weighted_moments_normalized-3-0,weighted_moments_normalized_3_0,Weighted normalized spatial moment for p=3 and q=0,moments,2,FALSE
+122,weighted_moments_normalized-3-1,weighted_moments_normalized_3_1,Weighted normalized spatial moment for p=3 and q=1,moments,2,FALSE
+123,weighted_moments_normalized-3-2,weighted_moments_normalized_3_2,Weighted normalized spatial moment for p=3 and q=2,moments,2,FALSE
+124,weighted_moments_normalized-3-3,weighted_moments_normalized_3_3,Weighted normalized spatial moment for p=3 and q=3,moments,2,FALSE
+125,weighted_moments_central-0-0,weighted_moments_central_0_0,Weighted central spatial moment for p=0 and q=0,moments,2,FALSE
+126,weighted_moments_central-0-1,weighted_moments_central_0_1,Weighted central spatial moment for p=0 and q=1,moments,2,FALSE
+127,weighted_moments_central-0-2,weighted_moments_central_0_2,Weighted central spatial moment for p=0 and q=2,moments,2,FALSE
+128,weighted_moments_central-0-3,weighted_moments_central_0_3,Weighted central spatial moment for p=0 and q=3,moments,2,FALSE
+129,weighted_moments_central-1-0,weighted_moments_central_1_0,Weighted central spatial moment for p=1 and q=0,moments,2,FALSE
+130,weighted_moments_central-1-1,weighted_moments_central_1_1,Weighted central spatial moment for p=1 and q=1,moments,2,FALSE
+131,weighted_moments_central-1-2,weighted_moments_central_1_2,Weighted central spatial moment for p=1 and q=2,moments,2,FALSE
+132,weighted_moments_central-1-3,weighted_moments_central_1_3,Weighted central spatial moment for p=1 and q=3,moments,2,FALSE
+133,weighted_moments_central-2-0,weighted_moments_central_2_0,Weighted central spatial moment for p=2 and q=0,moments,2,FALSE
+134,weighted_moments_central-2-1,weighted_moments_central_2_1,Weighted central spatial moment for p=2 and q=1,moments,2,FALSE
+135,weighted_moments_central-2-2,weighted_moments_central_2_2,Weighted central spatial moment for p=2 and q=2,moments,2,FALSE
+136,weighted_moments_central-2-3,weighted_moments_central_2_3,Weighted central spatial moment for p=2 and q=3,moments,2,FALSE
+137,weighted_moments_central-3-0,weighted_moments_central_3_0,Weighted central spatial moment for p=3 and q=0,moments,2,FALSE
+138,weighted_moments_central-3-1,weighted_moments_central_3_1,Weighted central spatial moment for p=3 and q=1,moments,2,FALSE
+139,weighted_moments_central-3-2,weighted_moments_central_3_2,Weighted central spatial moment for p=3 and q=2,moments,2,FALSE
+140,weighted_moments_central-3-3,weighted_moments_central_3_3,Weighted central spatial moment for p=3 and q=3,moments,2,FALSE
+141,weighted_moments_hu-0,weighted_moments_hu_0,Weighted Hu spatial moment of order 0,moments,2,FALSE
+142,weighted_moments_hu-1,weighted_moments_hu_1,Weighted Hu spatial moment of order 1,moments,2,FALSE
+143,weighted_moments_hu-2,weighted_moments_hu_2,Weighted Hu spatial moment of order 2,moments,2,FALSE
+144,weighted_moments_hu-3,weighted_moments_hu_3,Weighted Hu spatial moment of order 3,moments,2,FALSE
+145,weighted_moments_hu-4,weighted_moments_hu_4,Weighted Hu spatial moment of order 4,moments,2,FALSE
+146,weighted_moments_hu-5,weighted_moments_hu_5,Weighted Hu spatial moment of order 5,moments,2,FALSE
+147,weighted_moments_hu-6,weighted_moments_hu_6,Weighted Hu spatial moment of order 6,moments,2,FALSE
+148,moments-0-0,moments_0_0,Spatial moment for p=0 and q=0,moments,2,FALSE
+149,moments-0-1,moments_0_1,Spatial moment for p=0 and q=1,moments,2,FALSE
+150,moments-0-2,moments_0_2,Spatial moment for p=0 and q=2,moments,2,FALSE
+151,moments-0-3,moments_0_3,Spatial moment for p=0 and q=3,moments,2,FALSE
+152,moments-1-0,moments_1_0,Spatial moment for p=1 and q=0,moments,2,FALSE
+153,moments-1-1,moments_1_1,Spatial moment for p=1 and q=1,moments,2,FALSE
+154,moments-1-2,moments_1_2,Spatial moment for p=1 and q=2,moments,2,FALSE
+155,moments-1-3,moments_1_3,Spatial moment for p=1 and q=3,moments,2,FALSE
+156,moments-2-0,moments_2_0,Spatial moment for p=2 and q=0,moments,2,FALSE
+157,moments-2-1,moments_2_1,Spatial moment for p=2 and q=1,moments,2,FALSE
+158,moments-2-2,moments_2_2,Spatial moment for p=2 and q=2,moments,2,FALSE
+159,moments-2-3,moments_2_3,Spatial moment for p=2 and q=3,moments,2,FALSE
+160,moments-3-0,moments_3_0,Spatial moment for p=3 and q=0,moments,2,FALSE
+161,moments-3-1,moments_3_1,Spatial moment for p=3 and q=1,moments,2,FALSE
+162,moments-3-2,moments_3_2,Spatial moment for p=3 and q=2,moments,2,FALSE
+163,moments-3-3,moments_3_3,Spatial moment for p=3 and q=3,moments,2,FALSE
+164,moments_normalized-0-0,moments_normalized_0_0,Normalized spatial moments for p=0 and q=0,moments,2,FALSE
+165,moments_normalized-0-1,moments_normalized_0_1,Normalized spatial moments for p=0 and q=1,moments,2,FALSE
+166,moments_normalized-0-2,moments_normalized_0_2,Normalized spatial moments for p=0 and q=2,moments,2,FALSE
+167,moments_normalized-0-3,moments_normalized_0_3,Normalized spatial moments for p=0 and q=3,moments,2,FALSE
+168,moments_normalized-1-0,moments_normalized_1_0,Normalized spatial moments for p=1 and q=0,moments,2,FALSE
+169,moments_normalized-1-1,moments_normalized_1_1,Normalized spatial moments for p=1 and q=1,moments,2,FALSE
+170,moments_normalized-1-2,moments_normalized_1_2,Normalized spatial moments for p=1 and q=2,moments,2,FALSE
+171,moments_normalized-1-3,moments_normalized_1_3,Normalized spatial moments for p=1 and q=3,moments,2,FALSE
+172,moments_normalized-2-0,moments_normalized_2_0,Normalized spatial moments for p=2 and q=0,moments,2,FALSE
+173,moments_normalized-2-1,moments_normalized_2_1,Normalized spatial moments for p=2 and q=1,moments,2,FALSE
+174,moments_normalized-2-2,moments_normalized_2_2,Normalized spatial moments for p=2 and q=2,moments,2,FALSE
+175,moments_normalized-2-3,moments_normalized_2_3,Normalized spatial moments for p=2 and q=3,moments,2,FALSE
+176,moments_normalized-3-0,moments_normalized_3_0,Normalized spatial moments for p=3 and q=0,moments,2,FALSE
+177,moments_normalized-3-1,moments_normalized_3_1,Normalized spatial moments for p=3 and q=1,moments,2,FALSE
+178,moments_normalized-3-2,moments_normalized_3_2,Normalized spatial moments for p=3 and q=2,moments,2,FALSE
+179,moments_normalized-3-3,moments_normalized_3_3,Normalized spatial moments for p=3 and q=3,moments,2,FALSE
+180,moments_central-0-0,moments_central_0_0,Central spatial moments for p=0 and q=0,moments,2,FALSE
+181,moments_central-0-1,moments_central_0_1,Central spatial moments for p=0 and q=1,moments,2,FALSE
+182,moments_central-0-2,moments_central_0_2,Central spatial moments for p=0 and q=2,moments,2,FALSE
+183,moments_central-0-3,moments_central_0_3,Central spatial moments for p=0 and q=3,moments,2,FALSE
+184,moments_central-1-0,moments_central_1_0,Central spatial moments for p=1 and q=0,moments,2,FALSE
+185,moments_central-1-1,moments_central_1_1,Central spatial moments for p=1 and q=1,moments,2,FALSE
+186,moments_central-1-2,moments_central_1_2,Central spatial moments for p=1 and q=2,moments,2,FALSE
+187,moments_central-1-3,moments_central_1_3,Central spatial moments for p=1 and q=3,moments,2,FALSE
+188,moments_central-2-0,moments_central_2_0,Central spatial moments for p=2 and q=0,moments,2,FALSE
+189,moments_central-2-1,moments_central_2_1,Central spatial moments for p=2 and q=1,moments,2,FALSE
+190,moments_central-2-2,moments_central_2_2,Central spatial moments for p=2 and q=2,moments,2,FALSE
+191,moments_central-2-3,moments_central_2_3,Central spatial moments for p=2 and q=3,moments,2,FALSE
+192,moments_central-3-0,moments_central_3_0,Central spatial moments for p=3 and q=0,moments,2,FALSE
+193,moments_central-3-1,moments_central_3_1,Central spatial moments for p=3 and q=1,moments,2,FALSE
+194,moments_central-3-2,moments_central_3_2,Central spatial moments for p=3 and q=2,moments,2,FALSE
+195,moments_central-3-3,moments_central_3_3,Central spatial moments for p=3 and q=3,moments,2,FALSE
+196,moments_hu-0,moments_hu_0,Hu spatial moments of order 0,moments,2,FALSE
+197,moments_hu-1,moments_hu_1,Hu spatial moments of order 1,moments,2,FALSE
+198,moments_hu-2,moments_hu_2,Hu spatial moments of order 2,moments,2,FALSE
+199,moments_hu-3,moments_hu_3,Hu spatial moments of order 3,moments,2,FALSE
+200,moments_hu-4,moments_hu_4,Hu spatial moments of order 4,moments,2,FALSE
+201,moments_hu-5,moments_hu_5,Hu spatial moments of order 5,moments,2,FALSE
+202,moments_hu-6,moments_hu_6,Hu spatial moments of order 6,moments,2,FALSE
+203,equivalent_diameter.1,equivalent_diameter_3d,Diameter of a ball with equal volume in 3D,morphology,3,FALSE
+204,extent.1,extent_3d,Ratio of the volume of the nucleus and the bounding box,morphology,3,FALSE
+205,major_axis_length.1,major_axis_length_3d,Major axis length of an ellipsoid of equal volume in 3D,morphology,3,FALSE
+206,minor_axis_length.1,minor_axis_length_3d,Minor axis length of an ellipsoid of equal volume in 3D,morphology,3,FALSE
+207,solidity.1,solidity_3d,Ratio of the volume of the nucleus and its convex hull,morphology,3,FALSE
+208,nuclear_volume,volume,Nuclear volume,morphology,3,FALSE
+209,convex_hull_vol,convex_hull_volume,Volume of the convex hull of the nucleus in 3D,morphology,3,FALSE
+210,concavity_3d,concavity_3d,Normalized difference of the volume of the convex hull and the actual volume,morphology,3,FALSE
+211,rel_hc_volume,normalized_hc_volume,Volume of the heterochromatin content in the nucleus obtained via thresholding,chromatin condensation,3,FALSE
+212,rel_ec_volume,normalized_ec_volume,Volume of the euchromatin content in the nucleus obtained via thresholding,chromatin condensation,3,FALSE
+213,hc_ec_ratio_3d,hetero_to_euchromatin_volume_ratio,Ratio of the volume of the heterochromatin and euchromatin content in the nucleus obtained via thresholding,chromatin condensation,3,FALSE
+214,rdp_0,radial_chromatin_content_p0,Ratio of the heterchromatin content in the inner 0% of the volume,chromatin condensation,3,FALSE
+215,rdp_1,radial_chromatin_content_p10,Ratio of the heterchromatin content in the inner 10% of the volume,chromatin condensation,3,FALSE
+216,rdp_2,radial_chromatin_content_p20,Ratio of the heterchromatin content in the inner 20% of the volume,chromatin condensation,3,FALSE
+217,rdp_3,radial_chromatin_content_p30,Ratio of the heterchromatin content in the inner 30% of the volume,chromatin condensation,3,FALSE
+218,rdp_4,radial_chromatin_content_p40,Ratio of the heterchromatin content in the inner 40% of the volume,chromatin condensation,3,FALSE
+219,rdp_5,radial_chromatin_content_p50,Ratio of the heterchromatin content in the inner 50% of the volume,chromatin condensation,3,FALSE
+220,rdp_6,radial_chromatin_content_p60,Ratio of the heterchromatin content in the inner 60% of the volume,chromatin condensation,3,FALSE
+221,rdp_7,radial_chromatin_content_p70,Ratio of the heterchromatin content in the inner 70% of the volume,chromatin condensation,3,FALSE
+222,rdp_8,radial_chromatin_content_p80,Ratio of the heterchromatin content in the inner 80% of the volume,chromatin condensation,3,FALSE
+223,rdp_9,radial_chromatin_content_p90,Ratio of the heterchromatin content in the inner 90% of the volume,chromatin condensation,3,FALSE
+224,rel_dna_3d_int,normalized_absolute_dna_intensity_3d,Sum of the DNA intensity in the nucleus normalized by its volume,intensity,3,TRUE
+225,min_dna_3d_int,min_absolute_dna_intensity_3d,Minimum DNA intensity in the nucleus,intensity,3,TRUE
+226,max_dna_3d_int,max_absolute_dna_intensity_3d,Maximum DNA intensity in the nucleus,intensity,3,TRUE
+227,mean_dna_3d_int,mean_absolute_dna_intensity_3d,Average DNA intensity in the nucleus,intensity,3,TRUE
+228,std_dna_3d_int,std_absolute_dna_intensity_3d,Standard deviation of the DNA intensity in the nucleus,intensity,3,TRUE
+229,q25_dna_3d_int,p25_absolute_dna_intensity_3d,25%-tile of the DNA intensity distribution,intensity,3,TRUE
+230,q75_dna_3d_int,p75_absolute_dna_intensity_3d,75%-tile of the DNA intensity distribution,intensity,3,TRUE
+231,median_dna_3d_int,median_absolute_dna_intensity_3d,Median DNA intensity in the nucleus,intensity,3,TRUE
+232,kurtosis_dna_3d_int,kurtosis_absolute_dna_intensity_3d,Kurtosis of the DNA intensity distribution,intensity,3,TRUE
+233,skewness_dna_3d_int,skewness_absolute_dna_intensity_3d,Skewness of the DNA intensity distribution,intensity,3,TRUE

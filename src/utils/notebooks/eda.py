@@ -1,18 +1,32 @@
 import os
+from collections import Counter
 from typing import List
 
-import pandas as pd
-from sklearn.metrics import confusion_matrix, plot_roc_curve, auc
-from sklearn.model_selection import StratifiedKFold, GroupKFold, StratifiedGroupKFold
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+import ot
+import pandas as pd
+import seaborn as sns
+from imblearn.under_sampling import RandomUnderSampler
+from sklearn.metrics import (
+    confusion_matrix,
+    plot_roc_curve,
+    auc,
+    balanced_accuracy_score,
+    accuracy_score,
+)
+from sklearn.model_selection import StratifiedKFold, StratifiedGroupKFold
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 from tqdm import tqdm
 
 
 def read_in_protein_dataset(
-    data_dir, feature_file_path, qc_result_file_path, gh2ax_foci_result_file_path = None, gh2ax_foci_result_image_index_col="image_index", filter_samples: List[str] = None,
+    data_dir,
+    feature_file_path,
+    qc_result_file_path,
+    gh2ax_foci_result_file_path=None,
+    gh2ax_foci_result_image_index_col="image_index",
+    filter_samples: List[str] = None,
 ):
     all_features = []
     subdirs = [f.path for f in os.scandir(data_dir) if f.is_dir()]
@@ -29,17 +43,49 @@ def read_in_protein_dataset(
         features["data_dir"] = subdir
         if gh2ax_foci_result_file_path is not None:
             gh2ax_foci_path = subdir + gh2ax_foci_result_file_path
-            gh2ax_results = pd.read_csv(gh2ax_foci_path, index_col =0)
-            grouped_gh2ax_results = gh2ax_results.groupby(gh2ax_foci_result_image_index_col)
+            gh2ax_results = pd.read_csv(gh2ax_foci_path, index_col=0)
+            grouped_gh2ax_results = gh2ax_results.groupby(
+                gh2ax_foci_result_image_index_col
+            )
             count_gh2ax_results = grouped_gh2ax_results.count()
             sum_gh2ax_results = grouped_gh2ax_results.sum()
             avg_gh2ax_results = grouped_gh2ax_results.mean()
             features["gh2ax_foci_count"] = 0
             features["gh2ax_sum_foci_area"] = 0
             features["gh2ax_avg_foci_area"] = 0
-            features.loc[set(list(count_gh2ax_results.index)).intersection(list(features.index)), "gh2ax_foci_count"] = np.array(count_gh2ax_results.loc[set(list(count_gh2ax_results.index)).intersection(list(features.index)), "label"])
-            features.loc[set(list(sum_gh2ax_results.index)).intersection(list(features.index)), "gh2ax_sum_foci_area"] =  np.array(sum_gh2ax_results.loc[set(list(count_gh2ax_results.index)).intersection(list(features.index)), "area"])
-            features.loc[set(list(avg_gh2ax_results.index)).intersection(list(features.index)), "gh2ax_avg_foci_area"] = np.array(avg_gh2ax_results.loc[set(list(count_gh2ax_results.index)).intersection(list(features.index)), "area"])
+            features.loc[
+                set(list(count_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_foci_count",
+            ] = np.array(
+                count_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "label",
+                ]
+            )
+            features.loc[
+                set(list(sum_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_sum_foci_area",
+            ] = np.array(
+                sum_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "area",
+                ]
+            )
+            features.loc[
+                set(list(avg_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_avg_foci_area",
+            ] = np.array(
+                avg_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "area",
+                ]
+            )
 
         if (
             filter_samples is None
@@ -58,6 +104,8 @@ def read_in_marker_dataset(
     qc_result_file_path,
     marker_label_file_path,
     filter_samples: List[str] = None,
+    gh2ax_foci_result_file_path=None,
+    gh2ax_foci_result_image_index_col="image_index",
 ):
     all_features = []
     subdirs = [f.path for f in os.scandir(data_dir) if f.is_dir()]
@@ -73,6 +121,53 @@ def read_in_marker_dataset(
             set(list(features.index)).intersection(qc_results.index), "qc_pass"
         ] = qc_results.loc[qc_results.index, "qc_pass"]
         features["data_dir"] = subdir
+
+        if gh2ax_foci_result_file_path is not None:
+            gh2ax_foci_path = subdir + gh2ax_foci_result_file_path
+            gh2ax_results = pd.read_csv(gh2ax_foci_path, index_col=0)
+            grouped_gh2ax_results = gh2ax_results.groupby(
+                gh2ax_foci_result_image_index_col
+            )
+            count_gh2ax_results = grouped_gh2ax_results.count()
+            sum_gh2ax_results = grouped_gh2ax_results.sum()
+            avg_gh2ax_results = grouped_gh2ax_results.mean()
+            features["gh2ax_foci_count"] = 0
+            features["gh2ax_sum_foci_area"] = 0
+            features["gh2ax_avg_foci_area"] = 0
+            features.loc[
+                set(list(count_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_foci_count",
+            ] = np.array(
+                count_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "label",
+                ]
+            )
+            features.loc[
+                set(list(sum_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_sum_foci_area",
+            ] = np.array(
+                sum_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "area",
+                ]
+            )
+            features.loc[
+                set(list(avg_gh2ax_results.index)).intersection(list(features.index)),
+                "gh2ax_avg_foci_area",
+            ] = np.array(
+                avg_gh2ax_results.loc[
+                    set(list(count_gh2ax_results.index)).intersection(
+                        list(features.index)
+                    ),
+                    "area",
+                ]
+            )
+
         marker_labels = pd.read_csv(subdir + marker_label_file_path, index_col=0,)
         features = features.merge(marker_labels, left_index=True, right_index=True)
         if (
@@ -198,7 +293,16 @@ def remove_correlated_features(data, threshold):
     return data.drop(to_drop, axis=1)
 
 
-def plot_feature_importance(importance, names, model_type, figsize=[6, 4], cmap="gray"):
+def plot_feature_importance(
+    importance,
+    names,
+    model_type,
+    figsize=[6, 4],
+    cmap=["gray"],
+    n_features=10,
+    feature_color_dict=None,
+    labelsize=6,
+):
     # Create arrays from feature importance and feature names
     feature_importance = np.array(importance)
     feature_names = np.array(names)
@@ -209,17 +313,25 @@ def plot_feature_importance(importance, names, model_type, figsize=[6, 4], cmap=
 
     # Sort the DataFrame in order decreasing feature importance
     fi_df.sort_values(by=["feature_importance"], ascending=False, inplace=True)
-    fi_df = fi_df.head(20)
+    fi_df = fi_df.head(n_features)
     # Define size of bar plot
     fig, ax = plt.subplots(figsize=figsize)
     # Plot Searborn bar chart
     ax = sns.barplot(
-        x=fi_df["feature_importance"], y=fi_df["feature_names"], palette=cmap, ax=ax
+        y=fi_df["feature_importance"], x=fi_df["feature_names"], palette=cmap, ax=ax
     )
+    if feature_color_dict is not None:
+        for xticklabel in ax.get_xticklabels():
+            xticklabel.set_color(feature_color_dict[xticklabel.get_text()])
+            xticklabel.set_rotation(90)
+    ax.tick_params(axis="x", labelsize=labelsize)
+    ax.tick_params(axis="y", labelsize=labelsize)
+
+    # xticklabel.set_ha("right")
     # Add chart labels
     ax.set_title(model_type + "FEATURE IMPORTANCE")
-    ax.set_xlabel("FEATURE IMPORTANCE")
-    ax.set_ylabel("FEATURE NAMES")
+    ax.set_xlabel("")
+    ax.set_ylabel("")
     return fig, ax
 
 
@@ -229,7 +341,7 @@ def plot_roc_for_stratified_cv(
     if groups is None:
         cv = StratifiedKFold(n_splits=n_splits)
     else:
-        cv = GroupKFold(n_splits=n_splits)
+        cv = StratifiedGroupKFold(n_splits=n_splits)
     tprs = []
     aucs = []
     mean_fpr = np.linspace(0, 1, 100)
@@ -303,19 +415,29 @@ def plot_roc_for_stratified_cv(
 
 
 def compute_cv_conf_mtx(
-    model, n_folds, features, labels, groups=None,
+    model,
+    n_folds,
+    features,
+    labels,
+    groups=None,
+    balance_train=False,
+    random_state=1234,
 ):
     features = np.array(features)
     labels = np.array(labels)
     n_classes = len(np.unique(labels))
 
     confusion_mtx = np.zeros([n_classes, n_classes])
+    rus = RandomUnderSampler(random_state=random_state)
 
     if groups is not None:
         skf = StratifiedGroupKFold(n_splits=n_folds)
         for train_index, test_index in skf.split(features, labels, groups):
             X_train, X_test = features[train_index], features[test_index]
             y_train, y_test = labels[train_index], labels[test_index]
+            if balance_train:
+                X_train, y_train = rus.fit_resample(X_train, y_train)
+
             model.fit(X_train, y_train)
             fold_confusion_matrix = confusion_matrix(
                 y_test, model.predict(X_test), normalize=None, labels=model.classes_,
@@ -332,3 +454,142 @@ def compute_cv_conf_mtx(
             )
             confusion_mtx += fold_confusion_matrix
     return pd.DataFrame(confusion_mtx, index=model.classes_, columns=model.classes_)
+
+
+def get_cv_results_by_fold(
+    model,
+    features,
+    labels,
+    n_folds,
+    groups=None,
+    balance_train=False,
+    scoring=balanced_accuracy_score,
+    random_state=1234,
+):
+    if groups is not None:
+        cv = StratifiedGroupKFold(n_splits=n_folds)
+    else:
+        cv = StratifiedKFold(n_splits=n_folds)
+
+    rus = RandomUnderSampler(random_state=random_state)
+
+    cv_scores = []
+    cv_labels = []
+    cv_preds = []
+    cv_groups = []
+    cv_pred_probs = []
+    features = np.array(features)
+    labels = np.array(labels)
+    groups = np.array(groups)
+    for train_idx, test_idx in cv.split(X=features, y=labels, groups=groups):
+        X_train, X_test = features[train_idx], features[test_idx]
+        y_train, y_test = labels[train_idx], labels[test_idx]
+
+        if groups is not None and balance_train:
+            X_train, y_train = rus.fit_resample(X_train, y_train)
+        print(Counter(y_train))
+
+        model.fit(X_train, y_train)
+        preds = model.predict(X_test)
+        pred_probs = model.predict_proba(X_test)
+        cv_labels.append(y_test)
+        cv_preds.append(preds)
+        cv_pred_probs.append(pred_probs)
+        cv_scores.append(scoring(y_test, preds))
+        if groups is not None:
+            cv_groups.append(np.unique(groups[test_idx]))
+    return cv_scores, cv_labels, cv_preds, cv_pred_probs, cv_groups
+
+
+def summarize_group_cv_results_by_fold(
+    model,
+    features,
+    labels,
+    groups,
+    n_folds=None,
+    balance_train=False,
+    scoring=accuracy_score,
+    random_state=1234,
+):
+    if n_folds is None:
+        n_folds = len(np.unique(groups))
+    cv = StratifiedGroupKFold(n_splits=n_folds)
+    rus = RandomUnderSampler(random_state=random_state)
+
+    result = {
+        "group": [],
+        "score": [],
+        "avg_max_pred_prob": [],
+        "avg_true_class_pred_prob": [],
+        "majority_class": [],
+        "majority_predicted_class": [],
+    }
+
+    features = np.array(features)
+    labels = np.array(labels)
+    groups = np.array(groups)
+    for train_idx, test_idx in cv.split(X=features, y=labels, groups=groups):
+        X_train, X_test = features[train_idx], features[test_idx]
+        y_train, y_test = labels[train_idx], labels[test_idx]
+
+        if balance_train:
+            X_train, y_train = rus.fit_resample(X_train, y_train)
+
+        model.fit(X_train, y_train)
+        classes = model.classes_
+        preds = model.predict(X_test)
+        pred_probs = model.predict_proba(X_test)
+        test_groups = np.unique(groups[test_idx])
+        test_group = "_".join(sorted(list(test_groups)))
+        score = scoring(y_test, preds)
+        avg_max_pred_prob = np.mean(np.max(pred_probs, axis=1))
+        true_class_pred_probs = []
+        for i in range(len(y_test)):
+            true_class_pred_probs.append(pred_probs[i, classes == y_test[i]])
+        avg_true_class_pred_prob = np.mean(true_class_pred_probs)
+
+        result["group"].append(test_group)
+        result["score"].append(score)
+        result["avg_max_pred_prob"].append(avg_max_pred_prob)
+        result["avg_true_class_pred_prob"].append(avg_true_class_pred_prob)
+        result["majority_class"].append(Counter(y_test).most_common(1)[0][0])
+        result["majority_predicted_class"].append(Counter(preds).most_common(1)[0][0])
+
+    return pd.DataFrame(result, index=list(range(n_folds)))
+
+
+def compute_pairwise_emd(features, labels):
+    unique_labels = np.unique(labels)
+    n_unique_labels = len(unique_labels)
+
+    emd_mtx = np.zeros((n_unique_labels, n_unique_labels))
+    for i in tqdm(range(n_unique_labels)):
+        label_i_features = features[labels == unique_labels[i]]
+        a = np.ones((len(label_i_features),))
+        a = a / len(a)
+        for j in range(n_unique_labels):
+            if i == j:
+                emd_mtx[i, j] = 0
+            else:
+                label_j_features = features[labels == unique_labels[j]]
+                b = np.ones((len(label_j_features),))
+                b = b / len(b)
+                M = ot.dist(label_i_features, label_j_features)
+                emd_mtx[i, j] = ot.emd2(a, b, M)
+    emd_mtx = pd.DataFrame(emd_mtx, index=unique_labels, columns=unique_labels)
+    return emd_mtx
+
+
+def get_permute_group_labels(labels, groups):
+    unique_groups = np.unique(groups)
+    unique_labels = []
+    for group in unique_groups:
+        unique_labels.append(np.unique(labels[groups == group])[0])
+    unique_group_label_dict = dict(zip(unique_groups, unique_labels))
+    perm_unique_group_label_dict = dict(
+        zip(unique_groups, np.random.permutation(unique_labels))
+    )
+    perm_labels = []
+    for group in groups:
+        perm_labels.append(perm_unique_group_label_dict[group])
+    return perm_labels, perm_unique_group_label_dict, unique_group_label_dict

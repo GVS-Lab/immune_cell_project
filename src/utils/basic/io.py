@@ -1,9 +1,11 @@
 import logging
 import os
 from typing import List
-from src.utils.basic.base import sorted_nicely
+
 import numpy as np
 from skimage.io import imread, imsave
+
+from src.utils.basic.base import sorted_nicely
 
 
 def get_file_list(

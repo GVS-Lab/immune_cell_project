@@ -1,15 +1,16 @@
+import copy
 import logging
 import os
-import copy
 import shutil
 from typing import List
+
 import numpy as np
 import pandas as pd
+import scipy.ndimage as ndi
+import tifffile
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
 from skimage import filters, morphology, segmentation, measure, exposure, color, io
-import scipy.ndimage as ndi
-import tifffile
 from skimage.io import imread
 from tqdm import tqdm
 
@@ -73,6 +74,11 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
             file_type_filter=file_type_filter,
             normalize_channels=normalize_channels,
         )
+        self.nuclear_crops_2d_dir = None
+        self.nuclear_crops_3d_dir = None
+        self.nuclei_ids = None
+        self.nuclear_crop_labels = None
+        self.nuclei_masks = None
         self.file_name = None
         self.raw_image = None
         self.dna_image = None
@@ -224,7 +230,7 @@ class NucleiSegmentationPipeline(SegmentationPipeline):
     def compute_nuclei_masks(
         self,
         method: str = "morph_snakes",
-        median_smoothing="False",
+        median_smoothing=False,
         min_size: int = 400,
         n_jobs: int = 10,
         lambda1: float = 1,

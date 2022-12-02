@@ -9,7 +9,7 @@ from torch.optim import Adam, RMSprop
 from torch.optim import Optimizer
 from torchvision import transforms, models
 
-
+from src.helper.models import ExpConfig
 from src.models.clf import (
     resnet18,
     resnet34,
@@ -20,8 +20,6 @@ from src.models.clf import (
     SimpleClassifier,
     ModelEnsemble,
 )
-
-from src.helper.models import ExpConfig
 from src.utils.torch.general import get_device
 from src.utils.torch.transforms import (
     ToRGBTensor,

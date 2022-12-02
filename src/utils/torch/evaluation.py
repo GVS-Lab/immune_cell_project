@@ -9,7 +9,7 @@ from torch.nn import Module
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
-from src.helper.models import ExpConfig, ModelConfig, ExpConfig
+from src.helper.models import ModelConfig, ExpConfig
 from src.utils.basic.export import dict_to_hdf
 from src.utils.torch.general import get_device
 

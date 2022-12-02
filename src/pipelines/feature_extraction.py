@@ -1,9 +1,12 @@
 import os
 from typing import List
+
 import numpy as np
-from nmco.utils.run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
+import pandas as pd
 import tifffile
+from nmco.utils.run_nuclear_feature_extraction import run_nuclear_chromatin_feat_ext
 from tqdm import tqdm
+
 from src.utils.basic.feature_extraction import (
     compute_all_morphological_chromatin_features_3d,
     compute_all_channel_features,
@@ -12,7 +15,6 @@ from src.utils.basic.feature_extraction import (
     get_2D_foci_features,
 )
 from src.utils.basic.io import get_file_list
-import pandas as pd
 
 
 class FeatureExtractionPipeline(object):
@@ -191,13 +193,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
             self.features = pd.concat(([self.features, self.dna_features]), axis=1)
 
     def extract_foci_characteristics(
-        self,
-        channel,
-        alpha=2.5,
-        min_dist=1,
-        min_size=4,
-        sigma=0.5,
-        expansion=0,
+        self, channel, alpha=2.5, min_dist=1, min_size=4, sigma=0.5, expansion=0,
     ):
         channel_id = self.channels.index(channel)
         all_foci_feats = []
@@ -212,10 +208,9 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
                 image=channel_image,
                 mask=nucleus_mask,
                 image_index=image_id,
-                min_size=min_size,
-                min_dist=min_dist,
-                sigma=sigma,
                 alpha=alpha,
+                min_dist=min_dist,
+                min_size=min_size,
             )
             all_foci_feats.append(foci_feats)
         all_foci_feats = pd.concat(all_foci_feats)
@@ -320,11 +315,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
                 #     channel=channel, min_dist=3, threshold_rel=1, expansion=0
                 # )
                 foci_characteristics = self.extract_foci_characteristics(
-                    channel=channel,
-                    min_dist=1,
-                    min_size=4,
-                    alpha=2.5,
-                    sigma=0.5,
+                    channel=channel, min_dist=1, min_size=4, alpha=2.5, sigma=0.5,
                 )
                 self.save_features(
                     features=foci_characteristics,
@@ -334,11 +325,8 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
         if save_features:
             self.save_features(features=self.features)
 
-
     def run_gh2ax_foci_pipeline(
-        self,
-        characterize_channels: List = None,
-        protein_expansions: List[int] = None,
+        self, characterize_channels: List = None, protein_expansions: List[int] = None,
     ):
         if protein_expansions is None:
             protein_expansions = [0] * len(characterize_channels)
@@ -349,11 +337,7 @@ class MultiChannelFeatureExtractionPipeline3D(DnaFeatureExtractionPipeline3D):
             channel = characterize_channels[i]
             if channel.lower() == "gh2ax":
                 foci_characteristics = self.extract_foci_characteristics(
-                    channel=channel,
-                    min_dist=1,
-                    min_size=4,
-                    alpha=2.5,
-                    sigma=0.5,
+                    channel=channel, min_dist=1, min_size=4, alpha=2.5, sigma=0.5,
                 )
                 self.save_features(
                     features=foci_characteristics,

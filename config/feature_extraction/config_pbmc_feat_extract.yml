@@ -1,4 +1,4 @@
-output_dir: '../../data/glioma/proteins/timepoint_1/P22_1_PBMCs_Dapi_gH2AX_LaminA_C_CD3_11_10_21_2X_16bit_2X/preprocessed'
+output_dir: '../../data/meningioma/proteins/timepoint_3/P42_3_PBMCs_Dapi_gH2AX_LaminA_C_CD3_12_1_22_2X_16bit_2X/preprocessed'
 module: src.pipelines.full_pipelines
 class: FullPreprocessingPipeline
 run_params:
@@ -13,9 +13,9 @@ run_params:
 pipeline:
   - method: run_feature_extraction_pipeline
     params:
-      dna_projections_dir: "../../data/glioma/proteins/timepoint_1/P22_1_PBMCs_Dapi_gH2AX_LaminA_C_CD3_11_10_21_2X_16bit_2X/preprocessed/full_pipeline/segmentation/dna_projections_2d"
-      labeled_projections_dir: "../../data/glioma/proteins/timepoint_1/P22_1_PBMCs_Dapi_gH2AX_LaminA_C_CD3_11_10_21_2X_16bit_2X/preprocessed/full_pipeline/segmentation/labeled_segmentation_2d"
-      nuclei_image_dir: "../../data/glioma/proteins/timepoint_1/P22_1_PBMCs_Dapi_gH2AX_LaminA_C_CD3_11_10_21_2X_16bit_2X/preprocessed/full_pipeline/segmentation/nuclei_images"
+      dna_projections_dir: "../../data/meningioma/proteins/timepoint_3/P42_3_PBMCs_Dapi_gH2AX_LaminA_C_CD3_12_1_22_2X_16bit_2X/preprocessed/full_pipeline/segmentation/dna_projections_2d"
+      labeled_projections_dir: "../../data/meningioma/proteins/timepoint_3/P42_3_PBMCs_Dapi_gH2AX_LaminA_C_CD3_12_1_22_2X_16bit_2X/preprocessed/full_pipeline/segmentation/labeled_segmentation_2d"
+      nuclei_image_dir: "../../data/meningioma/proteins/timepoint_3/P42_3_PBMCs_Dapi_gH2AX_LaminA_C_CD3_12_1_22_2X_16bit_2X/preprocessed/full_pipeline/segmentation/nuclei_images"
       channels: ['dna', 'gh2ax', 'lamin', 'cd3']
       characterize_channels: ['gh2ax', 'lamin', 'cd3']
       compute_rdp: True

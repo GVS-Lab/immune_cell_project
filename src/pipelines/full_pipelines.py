@@ -104,12 +104,15 @@ class FullPreprocessingPipeline(Pipeline):
             segment_3d=segment_3d,
         )
 
-    def run_gh2ax_foci_pipeline(self, dna_projections_dir: str = None,
+    def run_gh2ax_foci_pipeline(
+        self,
+        dna_projections_dir: str = None,
         labeled_projections_dir: str = None,
         nuclei_image_dir: str = None,
         channels=None,
         characterize_channels: List = None,
-        protein_expansions: List = None,):
+        protein_expansions: List = None,
+    ):
 
         if channels is None:
             channels = ["dna"]

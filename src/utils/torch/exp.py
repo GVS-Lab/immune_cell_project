@@ -9,8 +9,8 @@ import torch
 from sklearn.metrics import balanced_accuracy_score
 from tqdm import tqdm
 
-from src.utils.torch.general import get_device
 from src.helper.models import ExpConfig, ModelConfig
+from src.utils.torch.general import get_device
 
 
 def train_val_test_loop(

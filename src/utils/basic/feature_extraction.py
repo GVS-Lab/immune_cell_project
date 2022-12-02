@@ -2,22 +2,18 @@ import copy
 
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-from skimage.color import label2rgb
+import scipy.ndimage as ndi
+from scipy.interpolate import interp1d
+from scipy.stats.mstats import kurtosis, skew
+from skimage import morphology, feature, measure
 from skimage.feature import peak_local_max
-from skimage.filters import gaussian
 from skimage.measure import (
     regionprops_table,
     marching_cubes,
     mesh_surface_area,
     regionprops,
 )
-from skimage import morphology, feature, measure
-import scipy.ndimage as ndi
-from scipy.interpolate import interp1d
-from scipy.stats.mstats import kurtosis, skew
-import cv2
-from skimage.segmentation import watershed, find_boundaries, mark_boundaries
+from skimage.segmentation import watershed
 
 
 def get_nuclear_surface_area(nucleus_mask: np.ndarray):
@@ -222,19 +218,12 @@ def get_n_foci(
 
 
 def get_2D_foci_features(
-    image,
-    mask,
-    image_index,
-    alpha=2.5,
-    min_dist=1,
-    min_size=4,
-    sigma=0.5,
+    image, mask, image_index, alpha=2.5, min_dist=1, min_size=4,
 ):
     img = image.max(axis=0)
     nuc_mask = copy.deepcopy(mask).max(axis=0).astype(bool)
 
     # Reduce noise via Gaussian filtering
-    filtered = gaussian(img, sigma)
     filtered = img.copy()
 
     # Obtain masked images

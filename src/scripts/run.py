@@ -4,10 +4,10 @@ import logging
 import os
 import shutil
 import sys
+from pprint import pformat
 
 import yaml
 
-from pprint import pformat
 from src.utils.basic.base import get_timestamp, key_in_dict
 
 sys.path.append("../../.")
