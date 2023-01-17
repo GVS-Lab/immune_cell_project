@@ -439,6 +439,7 @@ def compute_cv_conf_mtx(
                 X_train, y_train = rus.fit_resample(X_train, y_train)
 
             model.fit(X_train, y_train)
+            print(Counter(y_test))
             fold_confusion_matrix = confusion_matrix(
                 y_test, model.predict(X_test), normalize=None, labels=model.classes_,
             )
