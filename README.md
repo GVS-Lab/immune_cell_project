@@ -37,19 +37,9 @@ Intermediate results of the analysis can be obtained from our [Google Drive here
 
 ## 1. Data preprocessing
 
-The data preprocessing steps quantile-normalize the data, segment individual nuclei and cells as well as measure the
-chrometric features described
-in [Venkatachalapathy et al. (2020)](https://www.molbiolcell.org/doi/10.1091/mbc.E19-08-0420) for each nucleus and
-quantify the associated cellular expression of the proteins stained for in the processed immunofluorescent images. To
-preprocess the imaging data for the analysis of the B-cell populations in the germinal centers or the correlation
-analysis of the selected microimages please use the notebooks ```notebooks/dataset1/feature_generation.ipynb```
-or ```notebooks/dataset3/feature_generation.ipynb``` respectively.
 
-## 2. Reproducing the figure results
+## 2. Reproducing the figures' results
 
-To run the analysis regarding the different B-cell populations in the light respectively dark zone of the germinal
-centers, please use the code provided in the
-notebook ```notebooks/dataset1/light_vs_darkzone_bcells_and_tcell_integration.ipynb```.
 
 ---
 
