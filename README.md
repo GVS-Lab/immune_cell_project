@@ -1,6 +1,21 @@
-# Immune cell project
+# Single-cell imaging-AI based chromatin biomarkers for proton therapy efficacy in tumor patients using liquid biopsies
 
-To get started please download or clone the directory and install the required packages via Anaconda/Miniconda 
-``conda env create -f environment.yml``.
-Next, you can for instance run the image quality check notebook via
-``jupyter notebook`` and navigating to the respective notebook.
+This repository contains all the code that forms the developed computational framework described in our paper.
+
+** **
+
+
+---
+
+## Installation
+
+## Data availability
+
+## Reproducing the paper's results
+To reproduce the results presented in the paper
+
+## Questions
+
+## Credits
+
+---
