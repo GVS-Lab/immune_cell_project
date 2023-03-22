@@ -27,18 +27,30 @@ conda create --name icp --file requirements.txt
 conda activate icp
 ```
 
-## Data resouces (Optional)
-
-Intermediate results of the analysis can be obtained from our [Google Drive here](https://drive.google.com/drive/folders/1HszNjSRFI2x25mEDQo-a_rKpemwtJZ4C?usp=sharing) but can also be produced using the steps described below to reproduce the results of the paper. If you want to use and/or adapt the code to run another analysis, the data is not required neither.
+## Data resources
+The data to rerun the results can be obtained from the authors upon request and will be made publicly available upon publication.
 
 ---
 
 # Reproducing the paper results
 
-## 1. Data preprocessing
+## 1. Data preprocessing (Optional)
+The full preprocessing pipeline including the image segmentation in 2D and 3D as well as the feature extraction and (if applicable) the cell type classification can be run via the following command.
+```
+python run.py --config config/full_pipeline/config_pbmc_full_marker.yml
+```
+Note that the config file needs to be adjusted such that the correct file locations are specified.
+While all other parameters are recommended to be kept the channel parameters should also be adjusted to reflect the channels present in the images that are to be preprocessed.
 
+*The above steps can be skipped, if the preprocessed data is used which can be obtained from the authors (see Data resources)*
 
 ## 2. Reproducing the figures' results
+
+All results presented in the main and supplemental figures can be obtained by running the respective jupyter notebooks located in ``jupyter/notebooks/figures``. To run those notebooks, please start the jupyter server via
+```
+jupyter notebook
+```
+navigate to the notebook and run all cells.
 
 
 ---
