@@ -9,6 +9,7 @@ import seaborn as sns
 from imblearn.under_sampling import RandomUnderSampler
 from scipy.stats import ttest_ind
 from skimage.io import imread
+from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from statannotations.Annotator import Annotator
@@ -148,6 +149,23 @@ def get_tsne_embs(data, scale_data=True, seed=1234):
     )
     return embs
 
+def get_pca_embs(data, scale_data=True, seed=1234, return_pca=True):
+    if scale_data:
+        sc = StandardScaler()
+        data = pd.DataFrame(
+            sc.fit_transform(data), index=data.index, columns=data.columns
+        )
+
+    mapper = PCA(
+        random_state=seed,
+    )
+    embs = pd.DataFrame(
+        mapper.fit_transform(data), columns=["PC {}".format(i+1) for i in range(mapper.n_components_)], index=data.index
+    )
+    if return_pca:
+        return embs, mapper
+    else:
+        return embs
 
 def get_cv_conf_mtx(
     estimator,
