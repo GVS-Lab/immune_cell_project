@@ -6,7 +6,7 @@ The repository contains the code used to run the analyses presented in our publi
 
 <p align="center" width="100%">
   <b>Chromatin organization of PBMCs reflects the presence of tumor signals</b> <br>
-    <img width="66%" src="https://github.com/GVS-Lab/immune_cell_project/blob/1dae3aa5ca72b08fd3c3abaad73b43b76cc3adc6/chromark_paper_overview.png">
+    <img width="80%" src="https://github.com/GVS-Lab/immune_cell_project/blob/1dae3aa5ca72b08fd3c3abaad73b43b76cc3adc6/chromark_paper_overview.png">
 </p>
 
 ----
